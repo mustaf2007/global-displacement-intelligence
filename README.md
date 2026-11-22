@@ -163,3 +163,8 @@ The Streamlit Somalia ETT panel now includes a conditional regional period-compa
 ### ETT dataset ingestion gate
 
 The public DTM dataset page identifies the June–November 2026 ETT round, its observation unit (site or location), key-informant survey method, IDP population group and partial geographic coverage. The raw downloadable file has not yet been retrieved and schema-inspected in this repository. Until that step is complete, the dashboard must not describe the dataset as imported or generate historical weekly trends from the report catalogue. The existing Week 19 normalized observations remain a separately documented, report-derived snapshot.
+
+
+### Schema-first ETT dataset inspection
+
+`src/ett_dataset_ingest.py` provides a raw-row inspection step for the downloadable location-level ETT dataset. It profiles column names, null counts, distinct values, observed Python types and exact duplicate rows. It does not infer indicator meanings, units, reporting dates, geography levels or totals from column names. Normalization is intentionally blocked until a reviewed field mapping and indicator/unit/aggregation specification are available. This prevents accidental conversion of location-level records into regional or national arrival totals.
