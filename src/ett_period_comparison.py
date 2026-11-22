@@ -22,6 +22,8 @@ def compare_ett_periods(rows, indicator, measure_type, geography_type,
         "added_units": [],
         "removed_units": [],
         "coverage_comparable": False,
+        "earlier_coverage": None,
+        "later_coverage": None,
         "status": "insufficient_data",
     }
     if frame.empty:
@@ -35,6 +37,9 @@ def compare_ett_periods(rows, indicator, measure_type, geography_type,
     dimension = "category" if geography_type == "national" and indicator == "reported_reason_share" else "geography"
     if dimension not in subset.columns:
         return pd.DataFrame(columns=columns), metadata
+    if "source" in subset.columns and subset["source"].nunique() > 1:
+        metadata["status"] = "mixed_sources"
+        return pd.DataFrame(columns=columns), metadata
     subset["value"] = pd.to_numeric(subset["value"], errors="coerce")
     if subset["value"].isna().any() or (subset["value"] < 0).any():
         metadata["status"] = "invalid_values"
@@ -45,6 +50,11 @@ def compare_ett_periods(rows, indicator, measure_type, geography_type,
     earlier = subset[subset["period_label"] == earlier_period].set_index(dimension)["value"]
     later = subset[subset["period_label"] == later_period].set_index(dimension)["value"]
     earlier_units, later_units = set(earlier.index), set(later.index)
+    earlier_coverage = sorted(subset.loc[subset["period_label"] == earlier_period, "coverage"].dropna().astype(str).unique()) if "coverage" in subset else []
+    later_coverage = sorted(subset.loc[subset["period_label"] == later_period, "coverage"].dropna().astype(str).unique()) if "coverage" in subset else []
+    metadata["earlier_coverage"] = earlier_coverage
+    metadata["later_coverage"] = later_coverage
+    coverage_matches = earlier_coverage == later_coverage
     shared = sorted(earlier_units & later_units)
     added = sorted(later_units - earlier_units)
     removed = sorted(earlier_units - later_units)
@@ -54,8 +64,8 @@ def compare_ett_periods(rows, indicator, measure_type, geography_type,
         "shared_units": len(shared),
         "added_units": added,
         "removed_units": removed,
-        "coverage_comparable": bool(shared) and not added and not removed,
-        "status": "comparable_coverage" if shared and not added and not removed else
+        "coverage_comparable": bool(shared) and not added and not removed and coverage_matches,
+        "status": "comparable_coverage" if shared and not added and not removed and coverage_matches else
                   "partial_overlap" if shared else "no_shared_units",
     })
     records = []
