@@ -153,3 +153,8 @@ The `src/ett_period_comparison.py` module compares the same reported regions or 
 
 
 The Streamlit Somalia ETT panel now includes a conditional regional period-comparison interface. It remains in an explanatory one-period state until at least two verified reporting periods are present. When enabled, users can select origin or destination geography and two periods, inspect changes for shared units, see coverage differences and export the comparison. New and absent regions are not imputed as zero.
+
+
+### Historical ETT source register
+
+`data/somalia_ett_source_register.json` catalogues discovered IOM DTM weekly reports, quarterly overviews and the public dataset page. It records each source URL, reporting window, source type and extraction status. The dashboard exposes this register for inspection and JSON export. Source discovery is not the same as data extraction: only Week 19 is currently marked as having normalized observations in the registry. Other weekly reports remain pending numerical transcription and validation. Quarterly aggregates are kept separate from weekly flows, and the dataset page is not treated as imported until its source file is actually ingested.
