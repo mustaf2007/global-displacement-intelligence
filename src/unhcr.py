@@ -262,6 +262,31 @@ def country_historical_comparison(
     )
 
 
+
+def country_profile_series(
+    category_frames: dict[str, pd.DataFrame],
+    country_code: str,
+    geography: str,
+) -> pd.DataFrame:
+    """Combine one country's observed series across categories without aggregating categories."""
+    columns = ["time_period", "country_code", "country", "population", "pop_type", "measure_type"]
+    pieces = []
+    for pop_type, frame in category_frames.items():
+        series = country_historical_comparison(frame, pop_type, geography, [country_code])
+        if series.empty:
+            continue
+        series["pop_type"] = pop_type
+        series["measure_type"] = population_measure_type(pop_type)
+        pieces.append(series[columns])
+    if not pieces:
+        return pd.DataFrame(columns=columns)
+    return (
+        pd.concat(pieces, ignore_index=True)
+        .sort_values(["pop_type", "time_period"])
+        .reset_index(drop=True)
+    )
+
+
 def population_period_coverage(pop_type: str) -> pd.DataFrame:
     """
     Retrieve the full available reporting-period history for one population type.
