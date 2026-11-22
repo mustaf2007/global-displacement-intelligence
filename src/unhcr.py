@@ -252,13 +252,15 @@ def country_historical_comparison(
     if geography not in ("ref_area_adm0", "area_ori_adm0") or geography not in frame.columns:
         return pd.DataFrame(columns=columns)
     opposite = "area_ori_adm0" if geography == "ref_area_adm0" else "ref_area_adm0"
-    if opposite not in frame.columns:
-        return pd.DataFrame(columns=columns)
     data = frame[
         frame["pop_type"].astype("string").eq(pop_type)
         & frame[geography].astype("string").isin([str(code) for code in country_codes])
-        & frame[opposite].astype("string").eq("_T")
     ].copy()
+    # The UNHCR dimensions=default response is already the headline total
+    # view. Apply the opposite-dimension total filter only when that
+    # dimension is included in the returned schema.
+    if opposite in data.columns:
+        data = data[data[opposite].astype("string").eq("_T")]
     if data.empty:
         return pd.DataFrame(columns=columns)
     label_col = f"{geography}_label"
