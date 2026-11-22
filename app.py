@@ -1085,6 +1085,65 @@ if analysis_view == "Somalia displacement profile":
             "IOM DTM ETT dataset",
             "https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0",
         )
+    st.subheader("Week 19 — Regional distribution of new arrivals")
+    st.caption(
+        "IOM DTM's published origin and destination distributions are presented as separate "
+        "marginal summaries. They are not linked person-level or district-to-district flows."
+    )
+    origin_regions = pd.DataFrame({
+        "Origin region": ["Bay", "Middle Shabelle", "Hiraan", "Gedo", "Lower Shabelle", "Bakool", "Banadir", "Lower Juba", "Middle Juba", "Ethiopia"],
+        "New arrivals": [3528, 1862, 1105, 875, 789, 760, 472, 512, 375, 173],
+    })
+    destination_regions = pd.DataFrame({
+        "Destination region": ["Gedo", "Bay", "Banadir", "Middle Shabelle", "Hiraan", "Lower Juba", "Lower Shabelle"],
+        "New arrivals": [2188, 1985, 1929, 1883, 1041, 769, 656],
+    })
+    origin_total = int(origin_regions["New arrivals"].sum())
+    destination_total = int(destination_regions["New arrivals"].sum())
+    dist_left, dist_right = st.columns(2)
+    with dist_left:
+        st.markdown("**Reported origin distribution**")
+        st.metric("Origin total", f"{origin_total:,}")
+        origin_fig = px.bar(
+            origin_regions.sort_values("New arrivals"),
+            x="New arrivals", y="Origin region", orientation="h",
+            labels={"New arrivals": "New arrivals", "Origin region": "Origin"},
+        )
+        origin_fig.update_layout(xaxis_tickformat=",")
+        st.plotly_chart(origin_fig, use_container_width=True)
+        st.download_button(
+            "Download origin distribution (CSV)",
+            data=origin_regions.to_csv(index=False).encode("utf-8-sig"),
+            file_name="iom_ett_week19_origin_distribution.csv",
+            mime="text/csv",
+        )
+    with dist_right:
+        st.markdown("**Reported destination distribution**")
+        st.metric("Destination total", f"{destination_total:,}")
+        destination_fig = px.bar(
+            destination_regions.sort_values("New arrivals"),
+            x="New arrivals", y="Destination region", orientation="h",
+            labels={"New arrivals": "New arrivals", "Destination region": "Destination"},
+        )
+        destination_fig.update_layout(xaxis_tickformat=",")
+        st.plotly_chart(destination_fig, use_container_width=True)
+        st.download_button(
+            "Download destination distribution (CSV)",
+            data=destination_regions.to_csv(index=False).encode("utf-8-sig"),
+            file_name="iom_ett_week19_destination_distribution.csv",
+            mime="text/csv",
+        )
+    if origin_total != 10451 or destination_total != 10451:
+        st.warning(
+            "The displayed regional marginal totals do not reconcile to the published weekly total. "
+            "Review the source extraction before interpreting these distributions."
+        )
+    else:
+        st.caption(
+            "Arithmetic check: both published regional distributions sum to 10,451, "
+            "matching the Week 19 new-arrival total. This does not establish origin–destination pairings."
+        )
+
     st.info(
         "UNHCR and IOM indicators are intentionally not merged or added. UNHCR's selected series "
         "is a population-statistics measure; IOM's ETT figures describe newly reported arrivals "
