@@ -118,3 +118,8 @@ The Week 19 IOM ETT values are stored in `src/somalia_ett.py` as a source-attrib
 
 
 The Somalia subnational page includes a Week 19 validation and provenance panel. It displays each structural/arithmetic check, identifies the source report and reporting period, and provides a JSON export containing the snapshot and validation results for reproducibility. A passed check means internal consistency only; it is not an independent source audit or confirmation of nationwide coverage.
+
+
+### Somalia ETT normalized observations
+
+The Week 19 snapshot can be represented as a long-format observation table through `src/ett_timeseries.py`. Each record retains source attribution, reporting-period dates, coverage, population group, indicator, measure type, geographic dimension, geography, value and unit. The initial release contains one verified reporting period only; it does not manufacture missing weeks or imply a complete time series. Weekly arrivals, cumulative arrivals, regional origin/destination distributions and reported reason shares remain distinct measures. Validation checks required fields, non-negative numeric values, valid period ordering and unique observation keys. The dashboard provides CSV export of these normalized records. The normalized table is a foundation for future weekly ingestion, not a claim that automated historical ingestion is already available.
