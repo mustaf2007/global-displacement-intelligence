@@ -103,7 +103,6 @@ class PopulationAggregationTests(unittest.TestCase):
 
 
 class HistoricalCoverageTests(unittest.TestCase):
-    @patch("src.unhcr._fetch_all")
     def test_explicit_total_status_distinguishes_not_reported(self):
         frame = pd.DataFrame([
             {"pop_type": "REF_UNHCR", "time_period": "2026-06", "obs_value": 10, "ref_area_adm0": "SOM", "area_ori_adm0": "_T"},
@@ -132,6 +131,7 @@ class HistoricalCoverageTests(unittest.TestCase):
             (200.0, "reported"),
         )
 
+    @patch("src.unhcr._fetch_all")
     def test_groups_observations_by_available_reporting_period(self, fetch_all):
         fetch_all.return_value = pd.DataFrame([
             {"pop_type": "REF_UNHCR", "time_period": "2024-06"},
