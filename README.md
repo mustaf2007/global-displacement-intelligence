@@ -11,7 +11,7 @@ An open-source Streamlit research dashboard for exploring official population st
 - On-demand retrieval of all available UNHCR population-statistics records from 1960 onward for the selected category, with pagination and a 24-hour cache.
 - 24-hour application cache to reduce repeated API requests.
 - Source schema validation and numeric parsing.
-- Population-category and reporting-period filters, including all periods returned from 1960 onward.
+- Population-category, reporting-period and custom inclusive historical-range filters, including all periods returned from 1960 onward.
 - Country-of-asylum/hosting and country-of-origin rankings.
 - Historical country trends, reporting-period coverage and comparable-period change analysis.
 - Global displacement trends using explicit UNHCR total records only.
