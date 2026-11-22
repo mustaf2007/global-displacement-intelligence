@@ -238,3 +238,51 @@ def population_period_coverage(pop_type: str) -> pd.DataFrame:
         .reset_index(drop=True)
     )
     return coverage
+
+
+def country_period_changes(
+    frame: pd.DataFrame,
+    pop_type: str,
+    geography: str,
+    earlier_period: str,
+    later_period: str,
+) -> pd.DataFrame:
+    """Compare unique country totals across two observed periods; never fill absent values with zero."""
+    columns = ["country_code", "country", "earlier_population", "later_population", "absolute_change", "percentage_change"]
+    if geography not in ("ref_area_adm0", "area_ori_adm0") or geography not in frame.columns:
+        return pd.DataFrame(columns=columns)
+    opposite = "area_ori_adm0" if geography == "ref_area_adm0" else "ref_area_adm0"
+    data = frame[
+        frame["pop_type"].astype("string").eq(pop_type)
+        & frame["time_period"].astype("string").isin([earlier_period, later_period])
+    ].copy()
+    data = data[data[geography].notna() & ~data[geography].astype("string").isin(["_T", "_X"])]
+    if opposite in data.columns:
+        data = data[data[opposite].astype("string").eq("_T")]
+    label_col = geography + "_label"
+    name_col = label_col if label_col in data.columns else geography
+    data["obs_value"] = pd.to_numeric(data["obs_value"], errors="coerce")
+    data = data.dropna(subset=["obs_value"])
+    keys = [geography, "time_period"]
+    if data.duplicated(keys, keep=False).any():
+        return pd.DataFrame(columns=columns)
+    pivot = data.pivot(index=geography, columns="time_period", values="obs_value")
+    if earlier_period not in pivot.columns or later_period not in pivot.columns:
+        return pd.DataFrame(columns=columns)
+    pivot = pivot.dropna(subset=[earlier_period, later_period]).copy()
+    if pivot.empty:
+        return pd.DataFrame(columns=columns)
+    names = data.drop_duplicates(geography).set_index(geography)[name_col]
+    result = pd.DataFrame({
+        "country_code": pivot.index.astype(str),
+        "country": names.reindex(pivot.index).astype(str).values,
+        "earlier_population": pivot[earlier_period].values,
+        "later_population": pivot[later_period].values,
+    })
+    result["absolute_change"] = result["later_population"] - result["earlier_population"]
+    result["percentage_change"] = result.apply(
+        lambda row: (row["absolute_change"] / row["earlier_population"] * 100)
+        if row["earlier_population"] != 0 else pd.NA,
+        axis=1,
+    )
+    return result.sort_values("absolute_change", ascending=False).reset_index(drop=True)
