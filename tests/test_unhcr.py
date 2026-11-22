@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals, filter_reporting_periods, decade_comparison
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals, filter_reporting_periods, decade_comparison, country_historical_comparison
 
 
 class FetchAllTests(unittest.TestCase):
@@ -187,3 +187,29 @@ class DecadeComparisonTests(unittest.TestCase):
         result = decade_comparison(frame, "RET")
         self.assertEqual(result["population"].tolist(), [20.0])
         self.assertIn("not a decade total", result["summary_method"].iloc[0])
+
+
+class CountryHistoricalComparisonTests(unittest.TestCase):
+    def setUp(self):
+        self.frame = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2000", "obs_value": 100, "ref_area_adm0": "KEN", "ref_area_adm0_label": "Kenya", "area_ori_adm0": "_T"},
+            {"pop_type": "REF_UNHCR", "time_period": "2005", "obs_value": 150, "ref_area_adm0": "KEN", "ref_area_adm0_label": "Kenya", "area_ori_adm0": "_T"},
+            {"pop_type": "REF_UNHCR", "time_period": "2000", "obs_value": 200, "ref_area_adm0": "UGA", "ref_area_adm0_label": "Uganda", "area_ori_adm0": "_T"},
+            {"pop_type": "REF_UNHCR", "time_period": "2005", "obs_value": 250, "ref_area_adm0": "UGA", "ref_area_adm0_label": "Uganda", "area_ori_adm0": "_T"},
+            {"pop_type": "REF_UNHCR", "time_period": "2000", "obs_value": 999, "ref_area_adm0": "KEN", "ref_area_adm0_label": "Kenya", "area_ori_adm0": "SOM"},
+        ])
+
+    def test_returns_selected_country_series_using_total_opposite_dimension(self):
+        result = country_historical_comparison(self.frame, "REF_UNHCR", "ref_area_adm0", ["KEN", "UGA"])
+        self.assertEqual(len(result), 4)
+        self.assertEqual(set(result["country"]), {"Kenya", "Uganda"})
+        self.assertNotIn(999, result["population"].tolist())
+
+    def test_withholds_ambiguous_country_period_keys(self):
+        duplicate = pd.concat([self.frame, self.frame.iloc[[0]]], ignore_index=True)
+        result = country_historical_comparison(duplicate, "REF_UNHCR", "ref_area_adm0", ["KEN"])
+        self.assertFalse(((result["country_code"] == "KEN") & (result["time_period"] == "2000")).any())
+
+    def test_invalid_geography_returns_empty(self):
+        result = country_historical_comparison(self.frame, "REF_UNHCR", "invalid", ["KEN"])
+        self.assertTrue(result.empty)
