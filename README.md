@@ -55,7 +55,7 @@ The first run retrieves the selected population category's available history fro
 1. Open https://share.streamlit.io/.
 2. Connect this GitHub repository.
 3. Select branch `main` and entry point `app.py`.
-4. Deploy. No secrets are required.
+4. Deploy. No secrets are required for the UNHCR dashboard. To enable the optional IOM DTM API explorer, add `DTMAPI_SUBSCRIPTION_KEY` under the app's Streamlit secrets; without it, the explorer remains safely disabled and the rest of the dashboard continues to work.
 
 ## Statistical safeguards
 
@@ -191,3 +191,54 @@ IOM's current DTM API v3 is a separate data product from the public Somalia Emer
 - [Somalia ETT public dataset listing](https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0)
 
 The project therefore keeps these sources separate. Do not replace ETT weekly observations with DTM API baseline snapshots, and do not infer weekly arrival flows from stock data. The API may be evaluated as a separate future module after its access terms, country coverage, indicator definitions and temporal granularity have been verified. The ETT importer remains schema-first and requires the actual public dataset file or a source-confirmed machine-readable endpoint before normalization.
+
+### Optional IOM DTM API v3 connector
+
+The repository includes an opt-in connector in `src/dtm_api.py` for aggregated IDP assessment snapshots at Admin 0, Admin 1 and Admin 2. It uses the official `dtmapi` Python client and API v3. The connector is not called by the dashboard by default and does not alter the existing ETT Week 19 snapshot or ETT historical-ingestion workflow.
+
+To enable API calls:
+
+1. Register at the [IOM DTM Developer Portal](https://dtm-apim-portal.iom.int/) and subscribe to API-V3.
+2. Store the subscription key as `DTMAPI_SUBSCRIPTION_KEY` in your local environment or deployment secrets.
+3. Use `fetch_idp_data(country_name="Somalia", admin_level=1)` from `src.dtm_api` after installing requirements.
+
+Example:
+
+```python
+from src.dtm_api import fetch_idp_data
+
+somalia_admin1 = fetch_idp_data(
+    country_name="Somalia",
+    admin_level=1,
+    from_reporting_date="2025-01-01",
+)
+```
+
+Admin levels: 0 = country, 1 = first-level administrative division, 2 = second-level administrative division. The API returns assessment snapshots of IDP population stocks; it is not a weekly arrival-flow feed. The HNA API is a separate service and requires its own subscription. No API key is stored in this repository. Live API results must be inspected for coverage, reporting dates, schema and duplicate/geographic consistency before publication.
+
+Official references:
+- [DTM API overview](https://dtm.iom.int/data-and-analysis/dtm-api)
+- [DTM API Python client documentation](https://dtmapi.readthedocs.io/en/latest/)
+- [DTM API v3 usage guide](https://dtmapi.readthedocs.io/en/latest/usage.html)
+
+
+The optional `src/dtm_quality.py` helper profiles returned snapshots without altering them. It checks the expected administrative name, `reportingDate`, and `numPresentIdpInd` fields, along with missing values, invalid dates/counts, negative counts and exact duplicate rows. Its status is a basic structural/data check, not an independent validation of the source assessment. The exact API field names are based on the official DTM Python client example output.
+
+To run a manual, read-only connection check after configuring the key:
+
+```bash
+python scripts/check_dtm_connection.py --country Somalia --admin-level 1
+```
+
+Optional date filters are available with `--from-date YYYY-MM-DD` and `--to-date YYYY-MM-DD`. The script makes no request when the key is absent, prints summary metadata rather than records, and returns a non-zero exit code when access, coverage, or basic quality checks need attention.
+
+### DTM explorer preparation layer
+
+`src/dtm_explorer.py` adds reusable, dashboard-ready filtering and coverage summaries for API-returned IDP assessment snapshots. It supports administrative-unit and reporting-date filters while preserving source rows and columns. It does not aggregate observations, deduplicate records, impute missing values or treat absent areas as zero.
+
+The coverage summary reports only the geographic units and reporting dates present in the returned response. It explicitly does not claim complete national or subnational coverage. The Streamlit dashboard integration remains gated until a valid API key has been configured and live Somalia data have been reviewed.
+
+Offline tests cover date and administrative filters, source immutability, invalid date ranges, missing geography fields and coverage wording. No live API request is made by these tests.
+
+
+The Streamlit sidebar now includes an **IOM DTM API explorer** page. It is gated by the API subscription secret and makes no request until the user explicitly selects the retrieval button. The page supports Admin 0/1/2 selection, optional reporting-date filters, returned-record coverage and quality summaries, source-row inspection and CSV export. District-level responses can be filtered by returned region and district. Visualizations show individual dated assessment observations rather than summing repeated rounds. The page is separate from the UNHCR population views and the report-derived Somalia ETT panel.
