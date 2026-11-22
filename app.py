@@ -20,6 +20,7 @@ from src.unhcr import (
     population_measure_type,
     explicit_total_trend,
     decade_comparison,
+    country_historical_comparison,
     filter_reporting_periods,
 )
 
@@ -64,7 +65,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Country historical comparison", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -247,6 +248,88 @@ ranking = country_ranking(
     df, selected_type, geo, selected_period,
     limit=200 if analysis_view in ("Global hosting comparison", "Global hosting map") else 20,
 )
+
+if analysis_view == "Country historical comparison":
+    st.header("Country historical comparison")
+    st.caption(
+        "Compare reported country totals over the selected historical window. "
+        "Countries are compared within the selected geography; hosting and origin dimensions are never mixed."
+    )
+    opposite = "area_ori_adm0" if geo == "ref_area_adm0" else "ref_area_adm0"
+    label_col = f"{geo}_label"
+    if geo not in df.columns or opposite not in df.columns:
+        st.warning("The retrieved records do not contain the dimensions needed for this comparison.")
+        st.stop()
+    options_frame = df[
+        df["pop_type"].astype("string").eq(selected_type)
+        & df[opposite].astype("string").eq("_T")
+        & df[geo].notna()
+        & ~df[geo].astype("string").isin(["_T", "_X"])
+    ][[geo] + ([label_col] if label_col in df.columns else [])].drop_duplicates()
+    options_frame["country_code"] = options_frame[geo].astype(str)
+    options_frame["country_name"] = options_frame[label_col] if label_col in options_frame.columns else options_frame["country_code"]
+    options_frame = options_frame.drop_duplicates("country_code").sort_values("country_name")
+    code_to_name = dict(zip(options_frame["country_code"], options_frame["country_name"]))
+    ranked_codes = []
+    current_ranking = country_ranking(df, selected_type, geo, selected_period, limit=200)
+    if not current_ranking.empty:
+        name_to_code = {str(name): code for code, name in code_to_name.items()}
+        ranked_codes = [name_to_code[name] for name in current_ranking["country"] if name in name_to_code]
+    defaults = ranked_codes[:3]
+    selected_codes = st.multiselect(
+        "Select countries to compare",
+        options=options_frame["country_code"].tolist(),
+        default=defaults,
+        format_func=lambda code: code_to_name.get(code, code),
+        max_selections=8,
+        help="Choose up to eight countries. Countries without observations in a period are left missing, not set to zero.",
+    )
+    if not selected_codes:
+        st.info("Select at least one country to display its historical series.")
+        st.stop()
+    comparison = country_historical_comparison(df, selected_type, geo, selected_codes)
+    if comparison.empty:
+        st.warning("No unambiguous country-period totals were found for this selection.")
+        st.stop()
+    comparison["country"] = comparison["country"].astype(str)
+    measure = population_measure_type(selected_type)
+    st.caption(
+        f"Geography: {'Hosting / country of asylum' if geo == 'ref_area_adm0' else 'Country of origin'} · "
+        f"Measure: {measure.title()} · Window: {range_start} to {range_end}"
+    )
+    series_count = comparison.groupby("country_code")["time_period"].nunique()
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Countries selected", f"{comparison['country_code'].nunique():,}")
+    m2.metric("Observed reporting periods", f"{comparison['time_period'].nunique():,}")
+    m3.metric("Country-period observations", f"{len(comparison):,}")
+    trend_fig = px.line(
+        comparison, x="time_period", y="population", color="country",
+        markers=True,
+        labels={"time_period": "Reporting period", "population": "People", "country": "Country"},
+        title="Historical country comparison",
+    )
+    trend_fig.update_layout(yaxis_tickformat=",", xaxis_tickangle=-45, legend_title_text="Country")
+    st.plotly_chart(trend_fig, use_container_width=True)
+    coverage_table = pd.DataFrame([
+        {"country": code_to_name.get(code, code), "observed_periods": int(count)}
+        for code, count in series_count.items()
+    ]).sort_values("country")
+    st.subheader("Reporting coverage by country")
+    st.dataframe(coverage_table, hide_index=True, use_container_width=True)
+    st.subheader("Comparable country-period observations")
+    st.dataframe(comparison, hide_index=True, use_container_width=True)
+    st.download_button(
+        "Download country comparison (CSV)",
+        data=comparison.to_csv(index=False).encode("utf-8-sig"),
+        file_name=f"country_historical_comparison_{selected_type}.csv",
+        mime="text/csv",
+    )
+    if measure == "stock":
+        st.info("This is a stock comparison. Each point is a reported population at a point in time; do not add values across periods.")
+    else:
+        st.info("This is a flow comparison. Each point is a period-specific flow. Missing periods are not zero, and values should not be interpreted as a population stock.")
+    st.caption("Only unique country-period totals with the opposite geography set to the source total code are included. Duplicate country-period keys are withheld rather than summed. Gaps indicate missing or ambiguous observations, not zero population.")
+    st.stop()
 
 if analysis_view == "Global displacement trends":
     st.header("Global displacement trends")
