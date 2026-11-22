@@ -1,6 +1,62 @@
 import pandas as pd
 import plotly.express as px
+import pycountry
 import streamlit as st
+import re
+import unicodedata
+
+
+def country_iso3(country_name):
+    """Resolve UNHCR country labels to ISO-3 without guessing unknown entities."""
+    aliases = {
+        "Türkiye": "TUR",
+        "Islamic Republic of Iran": "IRN",
+        "United States of America": "USA",
+        "United Kingdom of Great Britain and Northern Ireland": "GBR",
+        "Democratic Republic of the Congo": "COD",
+        "Republic of the Congo": "COG",
+        "Netherlands (Kingdom of the)": "NLD",
+        "United Republic of Tanzania": "TZA",
+        "Côte d'Ivoire": "CIV",
+        "Republic of Moldova": "MDA",
+        "Bolivarian Republic of Venezuela": "VEN",
+        "Plurinational State of Bolivia": "BOL",
+        "Russian Federation": "RUS",
+        "Syrian Arab Republic": "SYR",
+        "Republic of Korea": "KOR",
+        "Viet Nam": "VNM",
+        "Naoero": "NRU",
+        "Hong Kong (China)": "HKG",
+        "Hong Kong (CHN)": "HKG",
+        "Serbia*": "SRB",
+        "State of Palestine": "PSE",
+        "Palestine": "PSE",
+        "Kosovo": "XKX",
+    }
+    if pd.isna(country_name):
+        return None
+    name = str(country_name).strip()
+    if name in aliases:
+        return aliases[name]
+
+    def normalize(value):
+        value = unicodedata.normalize("NFKD", str(value))
+        value = "".join(ch for ch in value if not unicodedata.combining(ch))
+        return re.sub(r"[^a-z0-9]", "", value.lower())
+
+    target = normalize(name)
+    for country in pycountry.countries:
+        candidates = [
+            getattr(country, "name", ""),
+            getattr(country, "official_name", ""),
+            getattr(country, "common_name", ""),
+        ]
+        if any(normalize(candidate) == target for candidate in candidates if candidate):
+            return country.alpha_3
+    try:
+        return pycountry.countries.lookup(name).alpha_3
+    except LookupError:
+        return None
 
 from src.unhcr import (
     UNHCRDataError,
@@ -87,30 +143,50 @@ if analysis_view == "Global hosting map":
     if ranking.empty:
         st.warning("No unambiguous country totals are available for this selection.")
     else:
-        map_fig = px.choropleth(
-            ranking,
-            locations="country",
-            locationmode="country names",
-            color="population",
-            hover_name="country",
-            hover_data={"population": ":,", "country": False},
-            color_continuous_scale="Blues",
-            labels={"population": "People"},
-            title="Reported refugee population by hosting country",
+        map_data = ranking.copy()
+        map_data["iso3"] = map_data["country"].map(country_iso3)
+        mapped = map_data[map_data["iso3"].notna()].copy()
+        unmapped = map_data[map_data["iso3"].isna()].copy()
+
+        if not mapped.empty:
+            map_fig = px.choropleth(
+                mapped,
+                locations="iso3",
+                locationmode="ISO-3",
+                color="population",
+                hover_name="country",
+                hover_data={"population": ":,", "iso3": False},
+                color_continuous_scale="Blues",
+                labels={"population": "People"},
+                title="Reported refugee population by hosting country",
+            )
+            map_fig.update_geos(
+                showframe=False,
+                showcoastlines=True,
+                projection_type="natural earth",
+            )
+            map_fig.update_layout(
+                height=650,
+                margin={"r": 0, "t": 55, "l": 0, "b": 0},
+            )
+            st.plotly_chart(map_fig, use_container_width=True)
+        else:
+            st.error("No country labels could be matched to ISO-3 codes; the map was not rendered.")
+
+        st.caption(
+            f"Mapped {len(mapped):,} of {len(map_data):,} country records "
+            f"({len(mapped) / len(map_data) * 100:.1f}% coverage)."
         )
-        map_fig.update_geos(
-            showframe=False,
-            showcoastlines=True,
-            projection_type="natural earth",
-        )
-        map_fig.update_layout(
-            height=650,
-            margin={"r": 0, "t": 55, "l": 0, "b": 0},
-        )
-        st.plotly_chart(map_fig, use_container_width=True)
+        if not unmapped.empty:
+            st.warning(
+                f"{len(unmapped):,} country label(s) could not be matched to an ISO-3 code. "
+                "They are retained below and are not silently discarded."
+            )
+            st.dataframe(unmapped[["country", "population"]], hide_index=True, use_container_width=True)
+
         st.subheader("Country totals")
         st.dataframe(ranking, hide_index=True, use_container_width=True)
-        map_export = ranking.copy()
+        map_export = map_data.copy()
         map_export.insert(0, "reporting_period", selected_period)
         map_export.insert(0, "population_category", selected_type)
         st.download_button(
@@ -120,9 +196,9 @@ if analysis_view == "Global hosting map":
             mime="text/csv",
         )
     st.info(
-        "The map visualizes country-level reported totals. Some UNHCR country labels "
-        "may not match Plotly's geographic name catalogue and may not appear on the map. "
-        "The accompanying table retains the full country ranking."
+        "The map uses ISO-3 geographic identifiers. Country labels without a verified "
+        "ISO-3 match remain in the accompanying table and are listed separately; "
+        "they are not treated as zero or silently removed."
     )
     st.stop()
 
