@@ -243,7 +243,9 @@ class CountryHistoricalComparisonTests(unittest.TestCase):
         self.assertTrue(result.empty)
 
     def test_uses_default_country_totals_when_opposite_dimension_is_absent(self):
-        default_view = self.frame.drop(columns=["area_ori_adm0"])
+        # Model the actual UNHCR default/headline response: one country-total
+        # row per country-period, with no opposite geography dimension.
+        default_view = self.frame.iloc[:4].drop(columns=["area_ori_adm0"])
         result = country_historical_comparison(
             default_view, "REF_UNHCR", "ref_area_adm0", ["KEN", "UGA"]
         )
