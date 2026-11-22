@@ -9,7 +9,7 @@ import requests
 API_URL = "https://api-data.unhcr.org/api/v0/data/PopStatsOfficial"
 CONSTRAINTS_URL = "https://api-data.unhcr.org/api/v0/constraints/PopStatsOfficial"
 REQUIRED_FIELDS = {"time_period", "pop_type", "obs_value"}
-POPULATION_TYPES = ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP", "STA"]
+POPULATION_TYPES = ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "STA"]
 
 
 def main() -> int:
@@ -42,25 +42,22 @@ def main() -> int:
         )
         constraints_response.raise_for_status()
         constraints = constraints_response.json()
-        dimensions = constraints.get("data", {}).get("dimensions", []) if isinstance(constraints.get("data"), dict) else constraints.get("data", [])
-        summary["constraints_top_level_keys"] = sorted(constraints.keys())
-        summary["dimensions_shape"] = type(dimensions).__name__
-        summary["constraints_data_sample"] = constraints.get("data")[:2] if isinstance(constraints.get("data"), list) else constraints.get("data")
-        if isinstance(dimensions, list):
-            summary["dimension_names"] = [
-                item.get("code") or item.get("name") or item.get("id")
-                for item in dimensions if isinstance(item, dict)
-            ]
+        data = constraints.get("data", [])
+        dimensions = data.get("dimensions", []) if isinstance(data, dict) else []
+        if isinstance(data, list):
             pop_dimension = next(
-                (item for item in dimensions if isinstance(item, dict)
-                 and (item.get("code") or item.get("name") or item.get("id")) == "pop_type"),
+                (item for item in data if isinstance(item, dict) and item.get("dimension") == "pop_type"),
                 None,
             )
-            if pop_dimension:
-                summary["pop_type_dimension_sample"] = pop_dimension
-        elif isinstance(dimensions, dict):
-            summary["dimension_names"] = sorted(dimensions.keys())
-            summary["pop_type_dimension_sample"] = dimensions.get("pop_type")
+        else:
+            pop_dimension = next(
+                (item for item in dimensions if isinstance(item, dict) and item.get("dimension") == "pop_type"),
+                None,
+            )
+        if not pop_dimension:
+            raise ValueError("The constraints response does not expose the pop_type dimension.")
+        valid_types = [item["code"] for item in pop_dimension.get("values", []) if item.get("has_data")]
+        summary["valid_population_types_from_constraints"] = valid_types
     except (requests.RequestException, ValueError) as exc:
         summary["constraints_error"] = str(exc)
 
