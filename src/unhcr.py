@@ -94,7 +94,7 @@ def latest_period(frame: pd.DataFrame) -> str | None:
 
 def population_types() -> list[str]:
     """Common population-type codes in UNHCR's official population series."""
-    return ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "STA"]
+    return ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "RET", "RDP", "NAT", "RASP", "STA"]
 
 
 def explicit_global_total(frame: pd.DataFrame, pop_type: str, period: str) -> float | None:
@@ -286,3 +286,22 @@ def country_period_changes(
         axis=1,
     )
     return result.sort_values("absolute_change", ascending=False).reset_index(drop=True)
+
+
+
+def population_measure_type(pop_type: str) -> str:
+    """Return the stock/flow classification documented by UNHCR for PopStatsOfficial."""
+    return "flow" if pop_type in {"RET", "RDP", "NAT", "RASP"} else "stock"
+
+
+def explicit_total_trend(frame: pd.DataFrame, pop_type: str) -> pd.DataFrame:
+    """Build a time series only from unique explicit total rows; never sum country records."""
+    columns = ["time_period", "population"]
+    if not {"pop_type", "time_period", "obs_value"}.issubset(frame.columns):
+        return pd.DataFrame(columns=columns)
+    rows = []
+    for period in sorted(frame["time_period"].dropna().astype(str).unique()):
+        value = explicit_global_total(frame, pop_type, period)
+        if value is not None:
+            rows.append({"time_period": period, "population": value})
+    return pd.DataFrame(rows, columns=columns)
