@@ -102,3 +102,8 @@ MIT License. See `LICENSE`.
 ### Explicit global totals and reporting status
 
 The dashboard displays a global total only when a unique explicit total record is present in the source data for the selected population category and reporting period. It distinguishes totals that are reported, not reported, missing a usable value, or ambiguous because conflicting values exist. Country-level observations are never added together to manufacture a global total.
+
+
+### Somalia integrated displacement profile
+
+The Somalia profile presents UNHCR population-statistics series and IOM DTM Emergency Trend Tracking evidence in separate sections. The IOM Week 19 snapshot (31 October–4 November 2026) reports 10,451 new arrivals, 114,553 cumulative arrivals since 14 June, and 16 assessed districts. The profile labels these as period-specific arrival flows from partial monitoring coverage, not the total IDP population. UNHCR population measures and IOM ETT arrival flows are not added or treated as directly equivalent. Week 20 is linked as a source, but its figures are not displayed until extracted and validated.
