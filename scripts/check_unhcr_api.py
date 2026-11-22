@@ -42,9 +42,10 @@ def main() -> int:
         )
         constraints_response.raise_for_status()
         constraints = constraints_response.json()
-        dimensions = constraints.get("dimensions", [])
+        dimensions = constraints.get("data", {}).get("dimensions", []) if isinstance(constraints.get("data"), dict) else constraints.get("data", [])
         summary["constraints_top_level_keys"] = sorted(constraints.keys())
         summary["dimensions_shape"] = type(dimensions).__name__
+        summary["constraints_data_sample"] = constraints.get("data")[:2] if isinstance(constraints.get("data"), list) else constraints.get("data")
         if isinstance(dimensions, list):
             summary["dimension_names"] = [
                 item.get("code") or item.get("name") or item.get("id")
