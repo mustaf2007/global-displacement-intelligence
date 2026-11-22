@@ -33,6 +33,31 @@ class FetchAllTests(unittest.TestCase):
         self.assertIn("RASP", population_types())
 
 
+class HistoricalRangeLoadTests(unittest.TestCase):
+    @patch("src.unhcr._fetch_all")
+    def test_loads_from_1960_and_validates_returned_records(self, fetch_all):
+        from src.unhcr import load_population_data
+
+        fetch_all.return_value = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "1960", "obs_value": "125"},
+            {"pop_type": "REF_UNHCR", "time_period": "2026", "obs_value": "250"},
+        ])
+        result = load_population_data("REF_UNHCR")
+        params = fetch_all.call_args.args[0]
+        self.assertEqual(params["time_period"], "ge:1960")
+        self.assertEqual(params["c[pop_type]"], "REF_UNHCR")
+        self.assertEqual(result["time_period"].tolist(), ["1960", "2026"])
+        self.assertEqual(result["obs_value"].tolist(), [125, 250])
+
+    @patch("src.unhcr._fetch_all")
+    def test_raises_when_no_history_is_returned(self, fetch_all):
+        from src.unhcr import load_population_data
+
+        fetch_all.return_value = pd.DataFrame()
+        with self.assertRaises(UNHCRDataError):
+            load_population_data("STA")
+
+
 class PopulationAggregationTests(unittest.TestCase):
     def setUp(self):
         self.frame = pd.DataFrame([
