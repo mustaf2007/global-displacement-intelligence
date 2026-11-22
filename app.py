@@ -1086,6 +1086,18 @@ if analysis_view == "Somalia subnational data":
             with open("data/somalia_ett_source_register.json", encoding="utf-8") as source_file:
                 source_register = json.load(source_file)
             source_frame = pd.DataFrame(source_register)
+            verified_sources = sum(
+                row.get("extraction_status") == "verified_observations_in_registry"
+                for row in source_register
+            )
+            pending_sources = sum(
+                row.get("extraction_status") != "verified_observations_in_registry"
+                for row in source_register
+            )
+            metric_cols = st.columns(3)
+            metric_cols[0].metric("Catalogued sources", len(source_register))
+            metric_cols[1].metric("With observations loaded", verified_sources)
+            metric_cols[2].metric("Awaiting extraction / import", pending_sources)
             st.caption(
                 "This register separates source discovery from numerical extraction. "
                 "A listed report is not treated as a verified observation until its figures "
