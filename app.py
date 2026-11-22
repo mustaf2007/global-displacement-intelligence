@@ -172,10 +172,15 @@ geo = (
 )
 
 global_total, global_total_status = explicit_global_total_result(df, selected_type, selected_period)
-a, b, c = st.columns(3)
-a.metric("Source-reported global total", f"{global_total:,.0f}" if global_total is not None else "Unavailable")
-b.metric("Selected period", selected_period)
-c.metric("Records retrieved", f"{len(df):,}")
+if global_total is not None:
+    a, b, c = st.columns(3)
+    a.metric("Source-reported global total", f"{global_total:,.0f}")
+    b.metric("Selected period", selected_period)
+    c.metric("Records retrieved", f"{len(df):,}")
+else:
+    a, b = st.columns(2)
+    a.metric("Selected period", selected_period)
+    b.metric("Records retrieved", f"{len(df):,}")
 
 total_status_messages = {
     "reported": "A unique explicit global total is available in the source data for this category and period.",
