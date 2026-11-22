@@ -290,6 +290,7 @@ if analysis_view == "Somalia subnational data":
                 "27 July–2 September 2026",
                 "From 17 October 2026",
                 "31 October–4 November 2026",
+                "7–11 November 2026 (IOM report published 18 November 2026)",
             ],
         })
         st.dataframe(coverage_phases, hide_index=True, use_container_width=True)
