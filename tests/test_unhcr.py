@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals, filter_reporting_periods, decade_comparison, country_historical_comparison, country_profile_series
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, explicit_global_total_result, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals, filter_reporting_periods, decade_comparison, country_historical_comparison, country_profile_series
 
 
 class FetchAllTests(unittest.TestCase):
@@ -104,6 +104,34 @@ class PopulationAggregationTests(unittest.TestCase):
 
 class HistoricalCoverageTests(unittest.TestCase):
     @patch("src.unhcr._fetch_all")
+    def test_explicit_total_status_distinguishes_not_reported(self):
+        frame = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2026-06", "obs_value": 10, "ref_area_adm0": "SOM", "area_ori_adm0": "_T"},
+        ])
+        self.assertEqual(
+            explicit_global_total_result(frame, "REF_UNHCR", "2026-06"),
+            (None, "not_reported"),
+        )
+
+    def test_explicit_total_status_flags_conflicting_totals(self):
+        frame = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2026-06", "obs_value": 100, "ref_area_adm0": "_T", "area_ori_adm0": "_T"},
+            {"pop_type": "REF_UNHCR", "time_period": "2026-06", "obs_value": 110, "ref_area_adm0": "_T", "area_ori_adm0": "_T"},
+        ])
+        self.assertEqual(
+            explicit_global_total_result(frame, "REF_UNHCR", "2026-06"),
+            (None, "ambiguous"),
+        )
+
+    def test_explicit_total_status_accepts_unique_value(self):
+        frame = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2026-06", "obs_value": "200", "ref_area_adm0": "_T", "area_ori_adm0": "_T"},
+        ])
+        self.assertEqual(
+            explicit_global_total_result(frame, "REF_UNHCR", "2026-06"),
+            (200.0, "reported"),
+        )
+
     def test_groups_observations_by_available_reporting_period(self, fetch_all):
         fetch_all.return_value = pd.DataFrame([
             {"pop_type": "REF_UNHCR", "time_period": "2024-06"},
