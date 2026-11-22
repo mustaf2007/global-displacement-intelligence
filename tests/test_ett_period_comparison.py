@@ -30,7 +30,7 @@ class ETTPeriodComparisonTests(unittest.TestCase):
         self.assertEqual(result.iloc[0]["absolute_change"], 100)
 
     def test_added_region_is_flagged_not_filled(self):
-        extra = self.later[0].copy()
+        extra = next(row.copy() for row in self.later if row["geography_type"] == "origin_region")
         extra["geography"] = "New region"
         result, meta = self.compare(self.base + self.later + [extra])
         self.assertEqual(meta["status"], "partial_overlap")
@@ -47,7 +47,7 @@ class ETTPeriodComparisonTests(unittest.TestCase):
         self.assertTrue(result.empty)
 
     def test_duplicate_period_dimension_is_withheld(self):
-        duplicate = self.later[0].copy()
+        duplicate = next(row.copy() for row in self.later if row["geography_type"] == "origin_region")
         result, meta = self.compare(self.base + self.later + [duplicate])
         self.assertEqual(meta["status"], "duplicate_observations")
         self.assertTrue(result.empty)
