@@ -43,7 +43,7 @@ def _request_page(params: dict[str, Any]) -> dict[str, Any]:
     raise UNHCRDataError("UNHCR API rate limit or temporary service error. Please try again shortly.")
 
 
-def _fetch_all(params: dict[str, Any], max_pages: int = 80) -> pd.DataFrame:
+def _fetch_all(params: dict[str, Any], max_pages: int = 200) -> pd.DataFrame:
     """Walk API pages sequentially; never silently treat a partial result as complete."""
     rows: list[dict[str, Any]] = []
     page = 1
@@ -66,25 +66,23 @@ def _fetch_all(params: dict[str, Any], max_pages: int = 80) -> pd.DataFrame:
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def load_population_data(pop_type: str = "REF_UNHCR") -> pd.DataFrame:
-    """Load the latest available reporting-year slice for one population type."""
-    current_year = datetime.utcnow().year
-    for year in range(current_year, current_year - 6, -1):
-        params = {
-            "c[pop_type]": pop_type,
-            "time_period": f"ge:{year}",
-            "dimensions": "default",
-            "sort": "time_period:desc",
-        }
-        frame = _fetch_all(params)
-        if not frame.empty:
-            required = {"time_period", "pop_type", "obs_value"}
-            missing = required.difference(frame.columns)
-            if missing:
-                raise UNHCRDataError("UNHCR response is missing required fields: " + ", ".join(sorted(missing)))
-            frame["obs_value"] = pd.to_numeric(frame["obs_value"], errors="coerce")
-            frame["time_period"] = frame["time_period"].astype("string")
-            return frame.drop_duplicates()
-    raise UNHCRDataError(f"No records were returned for {pop_type} in the latest six reporting years.")
+    """Load all available reporting periods from 1960 onward for one population type."""
+    params = {
+        "c[pop_type]": pop_type,
+        "time_period": "ge:1960",
+        "dimensions": "default",
+        "sort": "time_period:desc",
+    }
+    frame = _fetch_all(params)
+    if frame.empty:
+        raise UNHCRDataError(f"No records were returned for {pop_type} from 1960 onward.")
+    required = {"time_period", "pop_type", "obs_value"}
+    missing = required.difference(frame.columns)
+    if missing:
+        raise UNHCRDataError("UNHCR response is missing required fields: " + ", ".join(sorted(missing)))
+    frame["obs_value"] = pd.to_numeric(frame["obs_value"], errors="coerce")
+    frame["time_period"] = frame["time_period"].astype("string")
+    return frame.drop_duplicates()
 
 
 def latest_period(frame: pd.DataFrame) -> str | None:
