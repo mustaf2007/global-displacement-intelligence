@@ -41,7 +41,8 @@ class ETTSourceRegisterTests(unittest.TestCase):
         for row in self.records:
             if row["source_type"] == "quarterly_overview":
                 self.assertIn("aggregate", row["extraction_status"])
-                self.assertIn("do not merge", row["notes"].lower())
+                self.assertIn("weekly", row["notes"].lower())
+                self.assertIn("aggregate", row["notes"].lower())
 
 
 if __name__ == "__main__":
