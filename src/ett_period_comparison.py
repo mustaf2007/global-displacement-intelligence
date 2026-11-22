@@ -40,6 +40,9 @@ def compare_ett_periods(rows, indicator, measure_type, geography_type,
     if "source" in subset.columns and subset["source"].nunique() > 1:
         metadata["status"] = "mixed_sources"
         return pd.DataFrame(columns=columns), metadata
+    if "source" in subset.columns and subset["source"].nunique() > 1:
+        metadata["status"] = "mixed_sources"
+        return pd.DataFrame(columns=columns), metadata
     subset["value"] = pd.to_numeric(subset["value"], errors="coerce")
     if subset["value"].isna().any() or (subset["value"] < 0).any():
         metadata["status"] = "invalid_values"
@@ -50,6 +53,11 @@ def compare_ett_periods(rows, indicator, measure_type, geography_type,
     earlier = subset[subset["period_label"] == earlier_period].set_index(dimension)["value"]
     later = subset[subset["period_label"] == later_period].set_index(dimension)["value"]
     earlier_units, later_units = set(earlier.index), set(later.index)
+    earlier_coverage = sorted(subset.loc[subset["period_label"] == earlier_period, "coverage"].dropna().astype(str).unique()) if "coverage" in subset else []
+    later_coverage = sorted(subset.loc[subset["period_label"] == later_period, "coverage"].dropna().astype(str).unique()) if "coverage" in subset else []
+    metadata["earlier_coverage"] = earlier_coverage
+    metadata["later_coverage"] = later_coverage
+    coverage_matches = earlier_coverage == later_coverage
     earlier_coverage = sorted(subset.loc[subset["period_label"] == earlier_period, "coverage"].dropna().astype(str).unique()) if "coverage" in subset else []
     later_coverage = sorted(subset.loc[subset["period_label"] == later_period, "coverage"].dropna().astype(str).unique()) if "coverage" in subset else []
     metadata["earlier_coverage"] = earlier_coverage
