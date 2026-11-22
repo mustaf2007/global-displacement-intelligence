@@ -46,6 +46,23 @@ class ETTPeriodComparisonTests(unittest.TestCase):
         self.assertEqual(meta["status"], "no_shared_units")
         self.assertTrue(result.empty)
 
+    def test_mixed_sources_are_not_combined(self):
+        mixed = [row.copy() for row in self.later]
+        mixed[0]["source"] = "Different source"
+        result, meta = self.compare(self.base + mixed)
+        self.assertEqual(meta["status"], "mixed_sources")
+        self.assertTrue(result.empty)
+
+    def test_changed_coverage_label_is_flagged(self):
+        changed = [row.copy() for row in self.later]
+        for row in changed:
+            if row["geography_type"] == "origin_region":
+                row["coverage"] = "complete"
+        result, meta = self.compare(self.base + changed)
+        self.assertEqual(meta["status"], "partial_overlap")
+        self.assertFalse(meta["coverage_comparable"])
+        self.assertEqual(len(result), 10)
+
     def test_duplicate_period_dimension_is_withheld(self):
         duplicate = next(row.copy() for row in self.later if row["geography_type"] == "origin_region")
         result, meta = self.compare(self.base + self.later + [duplicate])
