@@ -13,6 +13,7 @@ from src.unhcr import (
     load_population_data,
     country_origin_breakdown,
     population_types,
+    population_period_coverage,
 )
 
 st.set_page_config(page_title="Global Refugee & Displacement Intelligence", page_icon="🌍", layout="wide")
@@ -99,6 +100,43 @@ with st.expander("Data Quality & Sources", expanded=False):
             st.success("No issues were detected by these checks in the retrieved dataset.")
     st.markdown("**Source:** [UNHCR Population Statistics](https://refugeedata.unhcr.org/en/data-finder/detail/PopStatsOfficial/data/)  \\n**API:** [UNHCR technical reference](https://refugeedata.unhcr.org/en/documentation/technical-reference/api/)")
     st.caption(f"Retrieved records: {len(df):,} · Selected reporting period: {selected_period}")
+
+    st.markdown("**Historical reporting-period coverage**")
+    st.caption("This query retrieves the available historical periods for the selected category using a compact population-type/time-period response. It reports observed periods; it does not assume that every category follows the same reporting frequency.")
+    with st.spinner("Checking historical reporting-period coverage..."):
+        try:
+            coverage = population_period_coverage(selected_type)
+        except UNHCRDataError as exc:
+            st.warning(f"Historical coverage could not be retrieved: {exc}")
+            coverage = pd.DataFrame()
+    if coverage.empty:
+        st.info("No historical reporting-period coverage records were returned.")
+    else:
+        first_period = str(coverage["time_period"].iloc[0])
+        last_period = str(coverage["time_period"].iloc[-1])
+        h1, h2, h3 = st.columns(3)
+        h1.metric("Periods available", f"{len(coverage):,}")
+        h2.metric("Earliest period", first_period)
+        h3.metric("Latest period", last_period)
+        coverage_fig = px.bar(
+            coverage,
+            x="time_period",
+            y="record_count",
+            labels={"time_period": "Reporting period", "record_count": "Observations"},
+            title="UNHCR observations by reporting period",
+        )
+        coverage_fig.update_layout(xaxis_tickangle=-45, height=360)
+        st.plotly_chart(coverage_fig, use_container_width=True)
+        st.dataframe(coverage, hide_index=True, use_container_width=True)
+        coverage_export = coverage.copy()
+        coverage_export.insert(0, "population_category", selected_type)
+        st.download_button(
+            "Download historical coverage (CSV)",
+            data=coverage_export.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"unhcr_period_coverage_{selected_type}.csv",
+            mime="text/csv",
+        )
+        st.caption("Interpretation: a period absent from this response is an unobserved period in this query, not proof that the population was zero or that UNHCR failed to report. Reporting cadence can vary by population category.")
 
     st.markdown("**Period reconciliation (diagnostic only)**")
     reconciliation = reconciliation_by_period(df, "ref_area_adm0")
