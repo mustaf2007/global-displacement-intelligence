@@ -12,7 +12,7 @@ from src.ett_timeseries import build_ett_observations, validate_ett_observations
 from src.ett_trends import prepare_ett_trend, trend_readiness
 from src.ett_analysis import regional_distribution, driver_distribution, distribution_summary
 from src.ett_period_comparison import compare_ett_periods
-from src.ett_needs import MAIN_IDP_NEEDS, NEW_ARRIVAL_NEEDS, SOURCE_URL as ETT_WEEK19_PDF_URL, validate_week19_needs
+from src.ett_needs import MAIN_IDP_NEEDS, NEW_ARRIVAL_NEEDS, SOURCE_URL as ETT_WEEK19_PDF_URL, needs_response_gap_rows, validate_week19_needs
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -747,7 +747,7 @@ if analysis_view == "Somalia subnational data":
             "IOM reports these percentages as the share of assessed settlements reporting each need or response. "
             "They are not percentages of displaced people."
         )
-        needs_frame = pd.DataFrame(NEW_ARRIVAL_NEEDS)
+        needs_frame = pd.DataFrame(needs_response_gap_rows())
         numeric_response = needs_frame[needs_frame["response_pct"].apply(lambda value: isinstance(value, int))].copy()
         numeric_response = numeric_response.melt(
             id_vars=["sector"], value_vars=["need_pct", "response_pct"],
@@ -767,6 +767,25 @@ if analysis_view == "Somalia subnational data":
             xaxis={"range": [0, 100]}, margin={"l": 8, "r": 8, "t": 55, "b": 8},
         )
         st.plotly_chart(needs_chart, use_container_width=True)
+        gap_frame = needs_frame.dropna(subset=["need_response_gap_pp"]).sort_values(
+            "need_response_gap_pp", ascending=False
+        )
+        gap_chart = px.bar(
+            gap_frame, x="need_response_gap_pp", y="sector",
+            orientation="h", title="Difference between reported need and response",
+            labels={"need_response_gap_pp": "Percentage-point difference", "sector": "Sector"},
+            text="need_response_gap_pp",
+        )
+        gap_chart.update_layout(
+            height=500, yaxis={"categoryorder": "total ascending"},
+            xaxis={"range": [0, 100]}, margin={"l": 8, "r": 8, "t": 55, "b": 8},
+        )
+        st.plotly_chart(gap_chart, use_container_width=True)
+        st.caption(
+            "Gap = percentage of assessed settlements reporting a need minus percentage reporting a response. "
+            "This is a descriptive percentage-point difference, not an estimate of unmet people or households. "
+            "Rows with non-numeric source responses are excluded from this calculation."
+        )
         st.dataframe(needs_frame, hide_index=True, use_container_width=True)
         st.caption(
             "The report records GBV response as <1% and several response categories as 'Not reported'. "
