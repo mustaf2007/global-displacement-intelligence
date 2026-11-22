@@ -158,3 +158,8 @@ The Streamlit Somalia ETT panel now includes a conditional regional period-compa
 ### Historical ETT source register
 
 `data/somalia_ett_source_register.json` catalogues discovered IOM DTM weekly reports, quarterly overviews and the public dataset page. It records each source URL, reporting window, source type and extraction status. The dashboard exposes this register for inspection and JSON export. Source discovery is not the same as data extraction: only Week 19 is currently marked as having normalized observations in the registry. Other weekly reports remain pending numerical transcription and validation. Quarterly aggregates are kept separate from weekly flows, and the dataset page is not treated as imported until its source file is actually ingested.
+
+
+### ETT dataset ingestion gate
+
+The public DTM dataset page identifies the June–November 2026 ETT round, its observation unit (site or location), key-informant survey method, IDP population group and partial geographic coverage. The raw downloadable file has not yet been retrieved and schema-inspected in this repository. Until that step is complete, the dashboard must not describe the dataset as imported or generate historical weekly trends from the report catalogue. The existing Week 19 normalized observations remain a separately documented, report-derived snapshot.
