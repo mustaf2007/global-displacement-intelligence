@@ -140,3 +140,8 @@ The append utility validates existing and incoming records, rejects duplicate ob
 The `src/ett_trends.py` module prepares period-comparable series for a specified indicator, measure type and geographic dimension. It withholds duplicate period keys and invalid numeric values. The dashboard displays a weekly national arrivals line chart only when at least two distinct verified reporting periods are available. Weekly flows, cumulative arrivals, reason shares and regional origin/destination marginals remain separate; no bilateral movement routes are inferred. With the current one-period baseline, the dashboard correctly reports that historical trend analysis is not yet supported.
 
 The committed JSON registry is also checked against the Week 19 observation builder in `tests/test_ett_registry_data.py`. This guards against accidental drift between the dashboard's seed records and the reproducible source transcription.
+
+
+### Somalia ETT regional and driver analysis
+
+The `src/ett_analysis.py` module calculates ranked origin and destination distributions, percentage shares, and within-distribution concentration (HHI). It also ranks quantified displacement-reason shares. Origin and destination marginals are never joined into inferred routes. The dashboard displays the largest reported origin and destination, separate regional tables, and the quantified driver breakdown. Textual categories reported as “<1%” are not coerced to numeric zero. These are descriptive summaries of the partial Week 19 monitoring coverage, not nationwide estimates or causal attribution.
