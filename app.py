@@ -1105,7 +1105,7 @@ if analysis_view == "Somalia subnational data":
             )
             display_source_cols = [
                 "title", "source_type", "period_start", "period_end",
-                "coverage_districts", "extraction_status", "source_url",
+                "coverage_districts", "coverage_districts_basis", "extraction_status", "source_url",
             ]
             st.dataframe(
                 source_frame[display_source_cols],
