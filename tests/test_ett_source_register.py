@@ -25,7 +25,7 @@ class ETTSourceRegisterTests(unittest.TestCase):
         }
         for row in self.records:
             for field in ("record_id", "title", "source_url", "source_type",
-                          "period_start", "period_end", "extraction_status", "notes", "catalogue_url"):
+                          "period_start", "period_end", "extraction_status", "notes", "catalogue_url", "coverage_districts_basis"):
                 self.assertTrue(row.get(field), f"Missing {field}: {row}")
             self.assertIn(row["extraction_status"], statuses)
             self.assertLessEqual(row["period_start"], row["period_end"])
@@ -36,6 +36,13 @@ class ETTSourceRegisterTests(unittest.TestCase):
             if row["extraction_status"] == "verified_observations_in_registry"
         ]
         self.assertEqual(loaded, ["ett_2026_week19"])
+
+    def test_known_funding_related_coverage_reductions_are_explicit(self):
+        by_id = {row["record_id"]: row for row in self.records}
+        for week_id in ("ett_2026_week13", "ett_2026_week16"):
+            self.assertEqual(by_id[week_id]["coverage_districts"], 5)
+            self.assertIn("limited funding", by_id[week_id]["notes"].lower())
+            self.assertEqual(by_id[week_id]["coverage_districts_basis"], "week_specific_report_note")
 
     def test_quarterly_reports_are_not_weekly_records(self):
         for row in self.records:
