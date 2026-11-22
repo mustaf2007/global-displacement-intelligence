@@ -260,6 +260,49 @@ if analysis_view == "Somalia subnational data":
     m3.metric("Districts assessed", "16")
     st.caption("These are new-arrival flow measures, not the total number of IDPs currently living in Somalia.")
 
+    with st.expander("ETT reporting coverage and historical context"):
+        coverage_phases = pd.DataFrame({
+            "Coverage phase": [
+                "Initial June 2026 series",
+                "Expanded coverage: July–September 2026",
+                "Expanded coverage from 17 October 2026",
+                "Week 19 reporting period",
+            ],
+            "Coverage detail": [
+                "5 districts: Baidoa, Dayniile, Diinsoor, Doolow and Kahda",
+                "8 additional districts were phased in; up to 13 districts in total",
+                "11 additional districts were added, expanding the series to 16 districts",
+                "16 districts assessed",
+            ],
+            "Reference": [
+                "14 June 2026",
+                "27 July–2 September 2026",
+                "From 17 October 2026",
+                "31 October–4 November 2026",
+            ],
+        })
+        st.dataframe(coverage_phases, hide_index=True, use_container_width=True)
+        st.markdown(
+            "**Separate quarterly context (Q3 2026):** IOM reported 68,469 new arrivals "
+            "during July–September 2026; drought accounted for 56%, conflict 33% and "
+            "evictions 9%. This quarterly figure is not added to Week 19 and is not "
+            "presented as a directly comparable weekly observation."
+        )
+        st.caption(
+            "Coverage changed over time. Differences between reporting periods may reflect "
+            "both displacement patterns and changes in the districts assessed. The Q3 "
+            "quarterly summary and the June–November ETT series are retained as distinct "
+            "source periods and are not merged into one continuous weekly trend."
+        )
+        st.link_button(
+            "Open IOM Q3 2026 ETT overview",
+            "https://dtm.iom.int/domain/displacementiomint",
+        )
+        st.link_button(
+            "Open IOM June–November 2026 ETT dataset",
+            "https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0",
+        )
+
     causes = pd.DataFrame({
         "Reason": ["Conflict", "Floods", "Drought", "Evictions"],
         "Share (%)": [44, 31, 20, 5],
