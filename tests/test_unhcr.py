@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes
 
 
 class FetchAllTests(unittest.TestCase):
@@ -68,6 +68,29 @@ class HistoricalCoverageTests(unittest.TestCase):
     def test_returns_empty_coverage_when_no_records(self, fetch_all):
         fetch_all.return_value = pd.DataFrame(columns=["pop_type", "time_period"])
         result = population_period_coverage("STA")
+        self.assertTrue(result.empty)
+
+
+class CountryPeriodChangeTests(unittest.TestCase):
+    def test_compares_only_countries_present_in_both_periods(self):
+        frame = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2024-06", "ref_area_adm0": "AAA", "ref_area_adm0_label": "Aland", "area_ori_adm0": "_T", "obs_value": 100},
+            {"pop_type": "REF_UNHCR", "time_period": "2025-06", "ref_area_adm0": "AAA", "ref_area_adm0_label": "Aland", "area_ori_adm0": "_T", "obs_value": 150},
+            {"pop_type": "REF_UNHCR", "time_period": "2024-06", "ref_area_adm0": "BBB", "ref_area_adm0_label": "Borland", "area_ori_adm0": "_T", "obs_value": 50},
+            {"pop_type": "REF_UNHCR", "time_period": "2025-06", "ref_area_adm0": "CCC", "ref_area_adm0_label": "Corland", "area_ori_adm0": "_T", "obs_value": 70},
+        ])
+        result = country_period_changes(frame, "REF_UNHCR", "ref_area_adm0", "2024-06", "2025-06")
+        self.assertEqual(result["country_code"].tolist(), ["AAA"])
+        self.assertEqual(result.iloc[0]["absolute_change"], 50)
+        self.assertEqual(result.iloc[0]["percentage_change"], 50)
+
+    def test_withholds_results_when_dimension_keys_are_duplicated(self):
+        frame = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2024-06", "ref_area_adm0": "AAA", "area_ori_adm0": "_T", "obs_value": 100},
+            {"pop_type": "REF_UNHCR", "time_period": "2024-06", "ref_area_adm0": "AAA", "area_ori_adm0": "_T", "obs_value": 100},
+            {"pop_type": "REF_UNHCR", "time_period": "2025-06", "ref_area_adm0": "AAA", "area_ori_adm0": "_T", "obs_value": 150},
+        ])
+        result = country_period_changes(frame, "REF_UNHCR", "ref_area_adm0", "2024-06", "2025-06")
         self.assertTrue(result.empty)
 
 if __name__ == "__main__":
