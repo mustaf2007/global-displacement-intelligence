@@ -150,3 +150,6 @@ The `src/ett_analysis.py` module calculates ranked origin and destination distri
 ### Coverage-aware period comparison
 
 The `src/ett_period_comparison.py` module compares the same reported regions or reason categories across two explicitly named reporting periods. It reports shared, added and removed units, and labels coverage as comparable, partial overlap or no shared units. Only shared units receive a value-change calculation; missing units are never filled with zero. A change in assessed geography is explicitly flagged so users do not mistake coverage expansion for a change in displacement patterns. This module is ready for future multi-period verified observations; it does not create a trend from the current single-period baseline.
+
+
+The Streamlit Somalia ETT panel now includes a conditional regional period-comparison interface. It remains in an explanatory one-period state until at least two verified reporting periods are present. When enabled, users can select origin or destination geography and two periods, inspect changes for shared units, see coverage differences and export the comparison. New and absent regions are not imputed as zero.
