@@ -97,3 +97,8 @@ Data source: UNHCR Refugee Data Portal. Retain attribution and comply with curre
 ## License
 
 MIT License. See `LICENSE`.
+
+
+### Explicit global totals and reporting status
+
+The dashboard displays a global total only when a unique explicit total record is present in the source data for the selected population category and reporting period. It distinguishes totals that are reported, not reported, missing a usable value, or ambiguous because conflicting values exist. Country-level observations are never added together to manufacture a global total.
