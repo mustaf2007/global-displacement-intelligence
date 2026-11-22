@@ -11,6 +11,7 @@ from src.somalia_ett import get_week19_snapshot, validate_week19_snapshot
 from src.ett_timeseries import build_ett_observations, validate_ett_observations
 from src.ett_trends import prepare_ett_trend, trend_readiness
 from src.ett_analysis import regional_distribution, driver_distribution, distribution_summary
+from src.ett_period_comparison import compare_ett_periods
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -980,6 +981,106 @@ if analysis_view == "Somalia subnational data":
         file_name="somalia_ett_week19_regional_distribution_analysis.csv",
         mime="text/csv",
     )
+    st.subheader("Regional change across reporting periods")
+    try:
+        with open("data/somalia_ett_observations.json", encoding="utf-8") as registry_file:
+            comparison_registry = json.load(registry_file)
+        regional_periods = sorted({
+            row.get("period_label") for row in comparison_registry
+            if row.get("indicator") == "new_arrivals"
+            and row.get("measure_type") == "flow"
+            and row.get("geography_type") in {"origin_region", "destination_region"}
+            and row.get("period_label")
+        })
+    except (OSError, json.JSONDecodeError):
+        comparison_registry = []
+        regional_periods = []
+
+    if len(regional_periods) < 2:
+        st.info(
+            "Regional change charts are not yet available. The verified registry currently "
+            "contains only one reporting period. Add a second source-checked period before "
+            "comparing regional changes; no values are estimated or carried forward."
+        )
+    else:
+        dimension_choice = st.radio(
+            "Compare geographic dimension",
+            ["Origin regions", "Destination regions"],
+            horizontal=True,
+            key="ett_comparison_dimension",
+        )
+        dimension_code = "origin_region" if dimension_choice == "Origin regions" else "destination_region"
+        earlier_choice, later_choice = st.columns(2)
+        with earlier_choice:
+            earlier_label = st.selectbox(
+                "Earlier reporting period", regional_periods,
+                index=0, key="ett_earlier_period",
+            )
+        later_options = [period for period in regional_periods if period != earlier_label]
+        with later_choice:
+            later_label = st.selectbox(
+                "Later reporting period", later_options,
+                index=len(later_options) - 1, key="ett_later_period",
+            )
+        comparison, comparison_meta = compare_ett_periods(
+            comparison_registry,
+            indicator="new_arrivals",
+            measure_type="flow",
+            geography_type=dimension_code,
+            earlier_period=earlier_label,
+            later_period=later_label,
+        )
+        st.caption(
+            f"Shared units: {comparison_meta['shared_units']} · "
+            f"Earlier units: {comparison_meta['earlier_units']} · "
+            f"Later units: {comparison_meta['later_units']}"
+        )
+        if comparison_meta["status"] == "mixed_sources":
+            st.warning("The selected periods contain mixed sources. No comparison is shown.")
+        elif comparison_meta["status"] in {"duplicate_observations", "invalid_values"}:
+            st.error("The selected observations failed validation. No comparison is shown.")
+        elif comparison.empty:
+            st.warning("No common regional units are available for this comparison.")
+        else:
+            if comparison_meta["status"] != "comparable_coverage":
+                st.warning(
+                    "Coverage differs between periods. Changes are shown only for shared regions; "
+                    "new or absent regions are not assigned zero. Interpret the comparison cautiously."
+                )
+            else:
+                st.success("The selected periods have matching reported units and coverage labels.")
+            change_chart = px.bar(
+                comparison.sort_values("absolute_change"),
+                x="absolute_change", y="unit", orientation="h",
+                color="direction",
+                labels={
+                    "absolute_change": "Change in reported arrivals",
+                    "unit": "Region",
+                    "direction": "Direction",
+                },
+                title="Change in reported arrivals in shared regions",
+            )
+            st.plotly_chart(change_chart, use_container_width=True)
+            st.dataframe(comparison, hide_index=True, use_container_width=True)
+            export_comparison = comparison.copy()
+            export_comparison.insert(0, "later_period", later_label)
+            export_comparison.insert(0, "earlier_period", earlier_label)
+            export_comparison.insert(0, "geography_dimension", dimension_code)
+            st.download_button(
+                "Download regional period comparison (CSV)",
+                data=export_comparison.to_csv(index=False).encode("utf-8-sig"),
+                file_name="somalia_ett_regional_period_comparison.csv",
+                mime="text/csv",
+            )
+        if comparison_meta["added_units"] or comparison_meta["removed_units"]:
+            st.caption(
+                "Newly reported units: " + (
+                    ", ".join(comparison_meta["added_units"]) or "None"
+                ) + " · Units not present in later period: " + (
+                    ", ".join(comparison_meta["removed_units"]) or "None"
+                )
+            )
+
     if consistency_checks["Result"].eq("Review").any():
         st.warning(
             "At least one arithmetic check does not match its reference. "
