@@ -9,6 +9,7 @@ from src.unhcr import (
     explicit_global_total,
     latest_period,
     load_population_data,
+    country_origin_breakdown,
     population_types,
 )
 
@@ -89,9 +90,37 @@ else:
     else:
         found = candidates[candidates[geo].astype(str).eq(chosen)]
     if not found.empty:
+        selected_geo_code = str(found.iloc[0][geo])
+
+        if geo == "ref_area_adm0":
+            st.subheader(f"Countries of origin among people hosted in {chosen}")
+            with st.spinner("Retrieving country-of-origin breakdown..."):
+                try:
+                    origins = country_origin_breakdown(selected_type, selected_geo_code, selected_period)
+                except UNHCRDataError as exc:
+                    st.warning(f"Origin breakdown could not be retrieved: {exc}")
+                    origins = pd.DataFrame()
+
+            if not origins.empty:
+                origin_fig = px.bar(
+                    origins.head(15).sort_values("population"),
+                    x="population",
+                    y="country_of_origin",
+                    orientation="h",
+                    labels={"population": "People", "country_of_origin": "Country of origin"},
+                )
+                origin_fig.update_layout(height=max(380, 25 * min(len(origins), 15)), yaxis_title=None)
+                st.plotly_chart(origin_fig, use_container_width=True)
+                st.dataframe(origins, hide_index=True, use_container_width=True)
+            else:
+                st.info(
+                    "No unambiguous country-of-origin records were returned for this hosting country "
+                    "and reporting period. The dashboard does not estimate or sum missing categories."
+                )
+
         with st.spinner("Retrieving the selected country's historical series..."):
             try:
-                trend = country_trend(selected_type, str(found.iloc[0][geo]), geo)
+                trend = country_trend(selected_type, selected_geo_code, geo)
             except UNHCRDataError as exc:
                 st.warning(f"Historical series could not be retrieved: {exc}")
                 trend = pd.DataFrame()
