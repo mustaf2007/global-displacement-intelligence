@@ -260,13 +260,29 @@ if analysis_view == "Somalia subnational data":
     st.caption("These are new-arrival flow measures, not the total number of IDPs currently living in Somalia.")
 
     causes = pd.DataFrame({
-        "Reason": ["Conflict", "Floods", "Drought", "Evictions", "Other / unspecified"],
-        "Share (%)": [44, 31, 20, 5, 0],
+        "Reason": ["Conflict", "Floods", "Drought", "Evictions"],
+        "Share (%)": [44, 31, 20, 5],
     })
     st.plotly_chart(
         px.bar(causes, x="Reason", y="Share (%)", title="Reported reasons for new displacement — Week 19"),
         use_container_width=True,
     )
+    st.caption(
+        "The report separately records other hazards as <1% and other reasons as <1%. "
+        "These categories are shown as reported text rather than being converted to 0%."
+    )
+    monitored_districts = [
+        "Afgooye", "Afmadow", "Baardheere", "Baidoa", "Balcad", "Belet Weyne",
+        "Bulo Burto", "Dayniile", "Diinsoor", "Doolow", "Jalalaqsi", "Jowhar",
+        "Kahda", "Kismaayo", "Luuq", "Qansax Dheere",
+    ]
+    with st.expander("View the 16 districts monitored in Week 19"):
+        st.write(", ".join(monitored_districts))
+        st.caption(
+            "This is the reporting coverage list, not a ranking. District-level arrival "
+            "counts are not displayed here because the currently integrated table contains "
+            "regional destination totals only."
+        )
     destinations = pd.DataFrame({
         "Destination region": ["Gedo", "Bay", "Banadir", "Middle Shabelle", "Hiraan", "Lower Juba", "Lower Shabelle"],
         "New arrivals": [2188, 1985, 1929, 1883, 1041, 769, 656],
