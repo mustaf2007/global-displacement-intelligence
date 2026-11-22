@@ -3,6 +3,7 @@ import plotly.express as px
 import pycountry
 import streamlit as st
 from src.geo import country_iso3
+from src.quality import audit_population_data
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -73,6 +74,30 @@ b.metric("Selected period", selected_period)
 c.metric("Records retrieved", f"{len(df):,}")
 
 st.caption(f"Latest reporting period in the retrieved slice: {latest_period(df) or 'Unknown'}")
+
+# Data quality diagnostics for the currently selected population category.
+quality = audit_population_data(df)
+with st.expander("Data Quality & Sources", expanded=False):
+    st.caption("Automated checks on retrieved records. These diagnostics flag issues; they do not silently repair or aggregate source data.")
+    if quality["status"] != "ok":
+        st.error("The retrieved dataset does not contain the minimum required schema.")
+        st.write("Missing fields:", ", ".join(quality["missing_columns"]))
+    else:
+        q1, q2, q3 = st.columns(3)
+        q1.metric("Invalid population values", f"{quality['invalid_population_values']:,}")
+        q2.metric("Negative population values", f"{quality['negative_population_values']:,}")
+        q3.metric("Missing geography codes", f"{quality['missing_geography_codes']:,}")
+        q4, q5 = st.columns(2)
+        q4.metric("Duplicate dimension-key rows", f"{quality['duplicate_dimension_key_rows']:,}")
+        q5.metric("Duplicate key groups", f"{quality['duplicate_dimension_key_groups']:,}")
+        st.caption("Dimension keys checked: population type, reporting period, hosting-country code and origin-country code. Duplicate keys are flagged, not summed.")
+        issue_keys = ("invalid_population_values", "negative_population_values", "missing_geography_codes", "duplicate_dimension_key_rows")
+        if any(quality[key] > 0 for key in issue_keys):
+            st.warning("One or more checks flagged records. Review source observations before interpreting results.")
+        else:
+            st.success("No issues were detected by these checks in the retrieved dataset.")
+    st.markdown("**Source:** [UNHCR Population Statistics](https://refugeedata.unhcr.org/en/data-finder/detail/PopStatsOfficial/data/)  \\n**API:** [UNHCR technical reference](https://refugeedata.unhcr.org/en/documentation/technical-reference/api/)")
+    st.caption(f"Retrieved records: {len(df):,} · Selected reporting period: {selected_period}")
 st.divider()
 ranking = country_ranking(
     df, selected_type, geo, selected_period,
