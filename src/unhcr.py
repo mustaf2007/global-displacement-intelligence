@@ -111,19 +111,38 @@ def population_types() -> list[str]:
     return ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "RET", "RDP", "NAT", "RASP", "STA"]
 
 
-def explicit_global_total(frame: pd.DataFrame, pop_type: str, period: str) -> float | None:
+def explicit_global_total_result(
+    frame: pd.DataFrame, pop_type: str, period: str
+) -> tuple[float | None, str]:
+    """Return an explicit source total and a transparent availability status."""
+    required = {"pop_type", "time_period", "obs_value"}
+    if not required.issubset(frame.columns):
+        return None, "unavailable_schema"
     data = frame[
         frame["pop_type"].astype("string").eq(pop_type)
         & frame["time_period"].astype("string").eq(period)
     ].copy()
     geo_cols = [c for c in ("ref_area_adm0", "area_ori_adm0") if c in data.columns]
     if not geo_cols:
-        return None
+        return None, "unavailable_geography"
     mask = pd.Series(True, index=data.index)
     for col in geo_cols:
         mask &= data[col].astype("string").isin(["_T", "<NA>", "nan"])
-    values = data.loc[mask, "obs_value"].dropna().drop_duplicates()
-    return float(values.iloc[0]) if len(values) == 1 else None
+    total_rows = data.loc[mask]
+    if total_rows.empty:
+        return None, "not_reported"
+    values = pd.to_numeric(total_rows["obs_value"], errors="coerce").dropna().drop_duplicates()
+    if values.empty:
+        return None, "reported_without_value"
+    if len(values) > 1:
+        return None, "ambiguous"
+    return float(values.iloc[0]), "reported"
+
+
+def explicit_global_total(frame: pd.DataFrame, pop_type: str, period: str) -> float | None:
+    """Return a unique explicit source total; never estimate it from country rows."""
+    value, status = explicit_global_total_result(frame, pop_type, period)
+    return value if status == "reported" else None
 
 
 def country_ranking(frame: pd.DataFrame, pop_type: str, geography: str, period: str, limit: int = 20) -> pd.DataFrame:
