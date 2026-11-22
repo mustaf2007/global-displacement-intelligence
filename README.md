@@ -115,3 +115,6 @@ The Somalia profile also presents IOM Week 19 origin-region and destination-regi
 ### Somalia ETT snapshot validation
 
 The Week 19 IOM ETT values are stored in `src/somalia_ett.py` as a source-attributed, manually transcribed snapshot rather than a live feed. The module provides a defensive-copy accessor and explicit checks for: weekly/cumulative count plausibility, unique district coverage, district-count consistency, origin and destination marginal totals, and cause-share arithmetic. Unit tests exercise successful validation, a deliberately corrupted distribution, district uniqueness, and mutation isolation. These checks establish internal arithmetic consistency only; they do not independently authenticate the source extraction, prove geographic completeness, or link origin and destination records into routes. Week 20 remains excluded until its numerical contents are independently extracted and verified.
+
+
+The Somalia subnational page includes a Week 19 validation and provenance panel. It displays each structural/arithmetic check, identifies the source report and reporting period, and provides a JSON export containing the snapshot and validation results for reproducibility. A passed check means internal consistency only; it is not an independent source audit or confirmation of nationwide coverage.
