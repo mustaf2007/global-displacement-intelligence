@@ -61,7 +61,7 @@ if not periods:
 selected_period = st.selectbox("Reporting period", periods, index=len(periods) - 1)
 geo = (
     "ref_area_adm0"
-    if analysis_view == "Global hosting comparison" or role == "Countries of asylum / hosting"
+    if analysis_view in ("Global hosting comparison", "Global hosting map") or role == "Countries of asylum / hosting"
     else "area_ori_adm0"
 )
 
@@ -75,7 +75,7 @@ st.caption(f"Latest reporting period in the retrieved slice: {latest_period(df) 
 st.divider()
 ranking = country_ranking(
     df, selected_type, geo, selected_period,
-    limit=200 if analysis_view == "Global hosting comparison" else 20,
+    limit=200 if analysis_view in ("Global hosting comparison", "Global hosting map") else 20,
 )
 
 if analysis_view == "Global hosting map":
