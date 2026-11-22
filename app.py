@@ -1181,11 +1181,40 @@ if analysis_view == "Somalia subnational data":
             metric_cols[2].metric("Awaiting extraction / import", pending_sources)
             if current_dataset:
                 st.markdown("**Latest IOM ETT dataset catalogue status**")
+                weekly_reports = [
+                    row for row in source_register
+                    if row.get("source_type") == "weekly_report"
+                ]
+                latest_catalogued_week = max(
+                    weekly_reports, key=lambda row: row.get("period_end", "")
+                ) if weekly_reports else None
+                verified_weekly_reports = [
+                    row for row in weekly_reports
+                    if row.get("extraction_status") == "verified_observations_in_registry"
+                ]
+                latest_verified_week = max(
+                    verified_weekly_reports, key=lambda row: row.get("period_end", "")
+                ) if verified_weekly_reports else None
                 status_cols = st.columns(3)
                 status_cols[0].metric("Dataset data through", current_dataset.get("data_through", current_dataset.get("period_end", "Not reported")))
                 status_cols[1].metric("Catalogue last updated", current_dataset.get("catalogue_last_updated", "Not recorded"))
-                status_cols[2].metric("Weekly periods loaded", "Week 19 only")
-                st.warning("The catalogue is newer than the weekly observations currently loaded in this dashboard. The public dataset file has not yet been imported; do not interpret the catalogue end date as a verified weekly observation or a current estimate.")
+                status_cols[2].metric(
+                    "Latest verified weekly report",
+                    latest_verified_week.get("title", "None") if latest_verified_week else "None",
+                )
+                if latest_catalogued_week and latest_catalogued_week != latest_verified_week:
+                    st.warning(
+                        f"Latest weekly report listed: {latest_catalogued_week.get('title', 'Unknown')} "
+                        f"({latest_catalogued_week.get('period_start', 'date not reported')} to "
+                        f"{latest_catalogued_week.get('period_end', 'date not reported')}); "
+                        "its numerical figures have not been extracted and validated. "
+                        "The latest verified weekly observations remain limited to the report shown above."
+                    )
+                st.info(
+                    "The public ETT dataset file has not yet been imported. Dataset coverage metadata "
+                    "and report catalogue entries are not themselves verified weekly observations "
+                    "or current population estimates."
+                )
                 st.link_button("Open IOM ETT public dataset", current_dataset["source_url"])
             st.caption(
                 "This register separates source discovery from numerical extraction. "
