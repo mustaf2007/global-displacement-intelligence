@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals, filter_reporting_periods
 
 
 class FetchAllTests(unittest.TestCase):
@@ -56,6 +56,29 @@ class HistoricalRangeLoadTests(unittest.TestCase):
         fetch_all.return_value = pd.DataFrame()
         with self.assertRaises(UNHCRDataError):
             load_population_data("STA")
+
+
+class HistoricalPeriodFilterTests(unittest.TestCase):
+    def setUp(self):
+        self.frame = pd.DataFrame([
+            {"time_period": "1960", "obs_value": 10},
+            {"time_period": "1990", "obs_value": 20},
+            {"time_period": "2000-06", "obs_value": 30},
+            {"time_period": "2025", "obs_value": 40},
+        ])
+
+    def test_filters_inclusive_period_range(self):
+        result = filter_reporting_periods(self.frame, "1990", "2000-06")
+        self.assertEqual(result["time_period"].tolist(), ["1990", "2000-06"])
+        self.assertEqual(result["obs_value"].tolist(), [20, 30])
+
+    def test_rejects_reversed_period_range(self):
+        with self.assertRaises(ValueError):
+            filter_reporting_periods(self.frame, "2025", "1990")
+
+    def test_missing_period_column_returns_empty_frame(self):
+        result = filter_reporting_periods(pd.DataFrame({"value": [1]}), "1960", "2025")
+        self.assertTrue(result.empty)
 
 
 class PopulationAggregationTests(unittest.TestCase):
