@@ -6,6 +6,7 @@ import requests
 import streamlit as st
 from src.geo import country_iso3
 from src.quality import audit_population_data, reconciliation_by_period
+from src.somalia_ett import get_week19_snapshot, validate_week19_snapshot
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -539,6 +540,8 @@ if analysis_view == "Global displacement trends":
 
 
 if analysis_view == "Somalia subnational data":
+    ett_week19 = get_week19_snapshot()
+    ett_validation = validate_week19_snapshot(ett_week19)
     st.header("Somalia subnational displacement data")
     st.caption(
         "A source and coverage workspace for district- and location-level displacement evidence. "
@@ -581,9 +584,9 @@ if analysis_view == "Somalia subnational data":
         "and verified for this dashboard, so Week 19 remains the latest displayed snapshot."
     )
     m1, m2, m3 = st.columns(3)
-    m1.metric("New arrivals this week", "10,451")
-    m2.metric("Cumulative arrivals since June", "114,553")
-    m3.metric("Districts assessed", "16")
+    m1.metric("New arrivals this week", f"{ett_week19['weekly_arrivals']:,}")
+    m2.metric("Cumulative arrivals since June", f"{ett_week19['cumulative_arrivals']:,}")
+    m3.metric("Districts assessed", f"{ett_week19['districts_assessed']:,}")
     st.caption("These are new-arrival flow measures, not the total number of IDPs currently living in Somalia.")
 
     with st.expander("ETT reporting coverage and historical context"):
@@ -633,8 +636,8 @@ if analysis_view == "Somalia subnational data":
         )
 
     causes = pd.DataFrame({
-        "Reason": ["Conflict", "Floods", "Drought", "Evictions"],
-        "Share (%)": [44, 31, 20, 5],
+        "Reason": [item["reason"] for item in ett_week19["causes"]],
+        "Share (%)": [item["share_pct"] for item in ett_week19["causes"]],
     })
     st.plotly_chart(
         px.bar(causes, x="Reason", y="Share (%)", title="Reported reasons for new displacement — Week 19"),
@@ -644,11 +647,7 @@ if analysis_view == "Somalia subnational data":
         "The report separately records other hazards as <1% and other reasons as <1%. "
         "These categories are shown as reported text rather than being converted to 0%."
     )
-    monitored_districts = [
-        "Afgooye", "Afmadow", "Baardheere", "Baidoa", "Balcad", "Belet Weyne",
-        "Bulo Burto", "Dayniile", "Diinsoor", "Doolow", "Jalalaqsi", "Jowhar",
-        "Kahda", "Kismaayo", "Luuq", "Qansax Dheere",
-    ]
+    monitored_districts = ett_week19["districts"]
     with st.expander("View the 16 districts monitored in Week 19"):
         st.write(", ".join(monitored_districts))
         st.caption(
@@ -657,8 +656,8 @@ if analysis_view == "Somalia subnational data":
             "regional destination totals only."
         )
     destinations = pd.DataFrame({
-        "Destination region": ["Gedo", "Bay", "Banadir", "Middle Shabelle", "Hiraan", "Lower Juba", "Lower Shabelle"],
-        "New arrivals": [2188, 1985, 1929, 1883, 1041, 769, 656],
+        "Destination region": [item["region"] for item in ett_week19["destinations"]],
+        "New arrivals": [item["arrivals"] for item in ett_week19["destinations"]],
     }).sort_values("New arrivals", ascending=False)
     st.markdown("**Reported destination regions — Week 19**")
     st.caption(
@@ -1091,12 +1090,12 @@ if analysis_view == "Somalia displacement profile":
         "marginal summaries. They are not linked person-level or district-to-district flows."
     )
     origin_regions = pd.DataFrame({
-        "Origin region": ["Bay", "Middle Shabelle", "Hiraan", "Gedo", "Lower Shabelle", "Bakool", "Banadir", "Lower Juba", "Middle Juba", "Ethiopia"],
-        "New arrivals": [3528, 1862, 1105, 875, 789, 760, 472, 512, 375, 173],
+        "Origin region": [item["region"] for item in ett_week19["origins"]],
+        "New arrivals": [item["arrivals"] for item in ett_week19["origins"]],
     })
     destination_regions = pd.DataFrame({
-        "Destination region": ["Gedo", "Bay", "Banadir", "Middle Shabelle", "Hiraan", "Lower Juba", "Lower Shabelle"],
-        "New arrivals": [2188, 1985, 1929, 1883, 1041, 769, 656],
+        "Destination region": [item["region"] for item in ett_week19["destinations"]],
+        "New arrivals": [item["arrivals"] for item in ett_week19["destinations"]],
     })
     origin_total = int(origin_regions["New arrivals"].sum())
     destination_total = int(destination_regions["New arrivals"].sum())
@@ -1133,7 +1132,7 @@ if analysis_view == "Somalia displacement profile":
             file_name="iom_ett_week19_destination_distribution.csv",
             mime="text/csv",
         )
-    if origin_total != 10451 or destination_total != 10451:
+    if not ett_validation['passed'] or origin_total != ett_week19['weekly_arrivals'] or destination_total != ett_week19['weekly_arrivals']:
         st.warning(
             "The displayed regional marginal totals do not reconcile to the published weekly total. "
             "Review the source extraction before interpreting these distributions."
