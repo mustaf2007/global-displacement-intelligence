@@ -10,6 +10,47 @@ API_URL = "https://api-data.unhcr.org/api/v0/data/PopStatsOfficial"
 CONSTRAINTS_URL = "https://api-data.unhcr.org/api/v0/constraints/PopStatsOfficial"
 REQUIRED_FIELDS = {"time_period", "pop_type", "obs_value"}
 POPULATION_TYPES = ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "RET", "RDP", "NAT", "RASP", "STA"]
+HEADERS = {"User-Agent": "Global-Displacement-Intelligence/0.2"}
+
+
+def _population_type_codes(constraints: dict) -> set[str]:
+    """Extract population-type codes with data from supported constraints shapes."""
+    data = constraints.get("data", [])
+    if isinstance(data, list):
+        dimensions = data
+    elif isinstance(data, dict):
+        dimensions = data.get("dimensions", [])
+    else:
+        dimensions = []
+
+    if not isinstance(dimensions, list):
+        raise ValueError("The constraints response has an invalid dimensions structure.")
+
+    dimension = next(
+        (
+            item for item in dimensions
+            if isinstance(item, dict) and item.get("dimension") == "pop_type"
+        ),
+        None,
+    )
+    if dimension is None:
+        raise ValueError("The constraints response does not expose the pop_type dimension.")
+
+    values = dimension.get("values", [])
+    if not isinstance(values, list):
+        raise ValueError("The pop_type constraints values are not a list.")
+
+    codes = {
+        item.get("code")
+        for item in values
+        if isinstance(item, dict)
+        and item.get("has_data") is True
+        and isinstance(item.get("code"), str)
+        and item.get("code")
+    }
+    if not codes:
+        raise ValueError("The pop_type constraints dimension contains no usable codes.")
+    return codes
 
 
 def main() -> int:
@@ -17,13 +58,14 @@ def main() -> int:
     summary = {
         "checked_at_utc": checked_at,
         "health_endpoint": "not_checked",
+        "constraints_status": "not_checked",
         "population_types": {},
     }
 
     try:
         health = requests.get(
             "https://api-data.unhcr.org/api/v0/health",
-            headers={"User-Agent": "Global-Displacement-Intelligence/0.2"},
+            headers=HEADERS,
             timeout=(10, 20),
         )
         health.raise_for_status()
@@ -34,35 +76,24 @@ def main() -> int:
         print(json.dumps(summary, indent=2))
         return 1
 
+    valid_types: set[str] | None = None
     try:
         constraints_response = requests.get(
             CONSTRAINTS_URL,
-            headers={"User-Agent": "Global-Displacement-Intelligence/0.2"},
+            headers=HEADERS,
             timeout=(10, 20),
         )
         constraints_response.raise_for_status()
-        constraints = constraints_response.json()
-        data = constraints.get("data", [])
-        dimensions = data.get("dimensions", []) if isinstance(data, dict) else []
-        if isinstance(data, list):
-            pop_dimension = next(
-                (item for item in data if isinstance(item, dict) and item.get("dimension") == "pop_type"),
-                None,
-            )
-        else:
-            pop_dimension = next(
-                (item for item in dimensions if isinstance(item, dict) and item.get("dimension") == "pop_type"),
-                None,
-            )
-        if not pop_dimension:
-            raise ValueError("The constraints response does not expose the pop_type dimension.")
-        valid_types = [item["code"] for item in pop_dimension.get("values", []) if item.get("has_data")]
-        summary["valid_population_types_from_constraints"] = valid_types
-    except (requests.RequestException, ValueError) as exc:
+        valid_types = _population_type_codes(constraints_response.json())
+        summary["constraints_status"] = "ok"
+        summary["valid_population_types_from_constraints"] = sorted(valid_types)
+        configured_missing = sorted(set(POPULATION_TYPES).difference(valid_types))
+        summary["configured_population_types_missing_from_constraints"] = configured_missing
+    except (requests.RequestException, ValueError, TypeError, KeyError) as exc:
+        summary["constraints_status"] = "failed"
         summary["constraints_error"] = str(exc)
+        summary["configured_population_types_missing_from_constraints"] = None
 
-    configured_missing = sorted(set(POPULATION_TYPES).difference(valid_types))
-    summary["configured_population_types_missing_from_constraints"] = configured_missing
     for pop_type in POPULATION_TYPES:
         params = {
             "c[pop_type]": pop_type,
@@ -75,7 +106,7 @@ def main() -> int:
             response = requests.get(
                 API_URL,
                 params=params,
-                headers={"User-Agent": "Global-Displacement-Intelligence/0.2"},
+                headers=HEADERS,
                 timeout=(10, 30),
             )
             response.raise_for_status()
@@ -93,6 +124,9 @@ def main() -> int:
             summary["population_types"][pop_type] = {"status": "no_observations"}
             continue
 
+        if not isinstance(rows[0], dict):
+            summary["population_types"][pop_type] = {"status": "invalid_row"}
+            continue
         missing = REQUIRED_FIELDS.difference(rows[0])
         if missing:
             summary["population_types"][pop_type] = {
@@ -103,8 +137,13 @@ def main() -> int:
 
         invalid = 0
         for row in rows:
+            if not isinstance(row, dict):
+                invalid += 1
+                continue
             try:
-                float(row["obs_value"])
+                value = float(row["obs_value"])
+                if not (value >= 0 and value < float("inf")):
+                    invalid += 1
             except (TypeError, ValueError, KeyError):
                 invalid += 1
 
@@ -114,7 +153,7 @@ def main() -> int:
             and isinstance(pagination.get("has_next"), bool)
             and isinstance(pagination.get("page"), int)
         )
-        periods = [str(row["time_period"]) for row in rows if row.get("time_period")]
+        periods = [str(row["time_period"]) for row in rows if isinstance(row, dict) and row.get("time_period")]
         status = "ok" if invalid == 0 and pagination_ok and periods else "data_quality_warning"
         summary["population_types"][pop_type] = {
             "status": status,
@@ -129,7 +168,10 @@ def main() -> int:
         code for code, result in summary["population_types"].items()
         if result.get("status") != "ok"
     ]
-    failed.extend(configured_missing)
+    if valid_types is not None:
+        failed.extend(configured_missing)
+    else:
+        failed.append("constraints")
     summary["overall_status"] = "ok" if not failed else "warning"
     summary["population_types_with_issues"] = failed
     print(json.dumps(summary, indent=2))
