@@ -8,7 +8,7 @@ class ETTTimeSeriesTests(unittest.TestCase):
         rows = build_ett_observations()
         result = validate_ett_observations(rows)
         self.assertTrue(result["passed"], result)
-        self.assertEqual(result["row_count"], 21)
+        self.assertEqual(result["row_count"], 23)
         self.assertEqual({row["measure_type"] for row in rows}, {"flow", "cumulative_flow", "percentage"})
 
     def test_stock_and_flow_are_not_conflated(self):
