@@ -107,3 +107,6 @@ The dashboard displays a global total only when a unique explicit total record i
 ### Somalia integrated displacement profile
 
 The Somalia profile presents UNHCR population-statistics series and IOM DTM Emergency Trend Tracking evidence in separate sections. The IOM Week 19 snapshot (31 October–4 November 2026) reports 10,451 new arrivals, 114,553 cumulative arrivals since 14 June, and 16 assessed districts. The profile labels these as period-specific arrival flows from partial monitoring coverage, not the total IDP population. UNHCR population measures and IOM ETT arrival flows are not added or treated as directly equivalent. Week 20 is linked as a source, but its figures are not displayed until extracted and validated.
+
+
+The Somalia profile also presents IOM Week 19 origin-region and destination-region distributions as separate marginal summaries. Both published distributions sum to 10,451, matching the weekly arrival total. They are not bilateral origin-to-destination flows and must not be used to infer routes or pair individual origins with destinations.
