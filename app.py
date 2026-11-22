@@ -588,12 +588,68 @@ if analysis_view == "Somalia subnational data":
         "https://dtm.iom.int/somalia",
     )
 
-    st.markdown("**Latest numerically verified ETT figures — Week 19**")
-    st.info(
-        "IOM has published Week 20 (7–11 November 2026) for the same 16-district " 
-        "monitoring footprint. Its numerical figures have not yet been extracted " 
-        "and verified for this dashboard, so Week 19 remains the latest displayed snapshot."
-    )
+    # Read the source-backed normalized registry and select the latest verified report.
+    with open("data/somalia_ett_observations.json", encoding="utf-8") as registry_file:
+        ett_registry = json.load(registry_file)
+    week20_rows = [
+        row for row in ett_registry
+        if row.get("period_start") == "2026-11-07"
+        and row.get("source") == "IOM DTM Somalia Emergency Trend Tracking, Week 20"
+    ]
+    week20_national = {
+        row["indicator"]: row["value"]
+        for row in week20_rows
+        if row.get("geography_type") == "national" and row.get("geography") == "Somalia"
+    }
+    week20_arrivals = week20_national.get("new_arrivals")
+    week20_cumulative = week20_national.get("cumulative_arrivals_since_start")
+    week20_causes = pd.DataFrame([
+        {"Reason": row["category"], "Share (%)": row["value"]}
+        for row in week20_rows
+        if row.get("indicator") == "reported_reason_share"
+    ])
+    if week20_arrivals is not None and week20_cumulative is not None:
+        st.markdown("**Latest numerically verified ETT figures — Week 20**")
+        w1, w2, w3 = st.columns(3)
+        w1.metric("New arrivals this week", f"{week20_arrivals:,}")
+        w2.metric("Cumulative arrivals since 14 June", f"{week20_cumulative:,}")
+        w3.metric("Districts assessed", "16")
+        st.caption(
+            "Reporting period: 7–11 November 2026. These are reported new-arrival flows, "
+            "not the total IDP population currently living in Somalia."
+        )
+        if not week20_causes.empty:
+            st.plotly_chart(
+                px.bar(
+                    week20_causes, x="Reason", y="Share (%)",
+                    title="Reported reasons for new displacement — Week 20",
+                ),
+                use_container_width=True,
+            )
+        week19_value = ett_week19["weekly_arrivals"]
+        comparison = pd.DataFrame([
+            {"Reporting period": "Week 19 (31 Oct–4 Nov)", "New arrivals": week19_value},
+            {"Reporting period": "Week 20 (7–11 Nov)", "New arrivals": week20_arrivals},
+        ])
+        st.plotly_chart(
+            px.bar(
+                comparison, x="Reporting period", y="New arrivals",
+                title="Reported weekly new arrivals — two verified reporting periods",
+                text="New arrivals",
+            ).update_layout(yaxis_tickformat=","),
+            use_container_width=True,
+        )
+        st.caption(
+            "This two-period comparison is not a long-term trend. Reporting coverage and "
+            "methodology must be considered when interpreting differences."
+        )
+        st.markdown("**Week 19 historical reference**")
+    else:
+        st.warning(
+            "The Week 20 record is present in the source registry but its required national "
+            "indicators could not be resolved. Week 19 remains the displayed snapshot."
+        )
+        st.markdown("**Latest numerically verified ETT figures — Week 19**")
     m1, m2, m3 = st.columns(3)
     m1.metric("New arrivals this week", f"{ett_week19['weekly_arrivals']:,}")
     m2.metric("Cumulative arrivals since June", f"{ett_week19['cumulative_arrivals']:,}")
