@@ -180,3 +180,14 @@ The public DTM dataset page identifies the June–November 2026 ETT round, its o
 The Week 19 report's needs and response tables are transcribed in `src/ett_needs.py` and displayed separately from new-arrival flow counts. The new-arrival sector table reports the share of assessed settlements where a need or response was reported; it is not the share of displaced individuals. A second table records the main needs of IDPs in assessed locations, which can describe people who arrived at any time. These measures are not combined. Text categories such as `<1%` and `Not reported` are preserved as text and are never recoded to zero. The transcription has automated structural and range checks, but those checks do not independently authenticate the source. The direct Week 19 report PDF is linked in the dashboard.
 
 The dashboard also computes a descriptive needs-response gap in percentage points (settlement share reporting a need minus settlement share reporting a response) where both source values are numeric. It does not interpret this as a count of unmet individuals or households; non-numeric source responses remain missing from the calculation.
+
+### DTM API access is not a substitute for the Somalia ETT dataset
+
+IOM's current DTM API v3 is a separate data product from the public Somalia Emergency Trend Tracking (ETT) dataset. The documented API provides aggregated IDP baseline figures at Admin 0, Admin 1 and Admin 2 levels, plus a separate Humanitarian Needs Assessment (HNA) API. API v3 access requires registration and a subscription key. It should not be treated as a drop-in source for the June 2026 ETT site/location-level weekly arrival series.
+
+- [Official DTM API overview and scope](https://dtm.iom.int/data-and-analysis/dtm-api)
+- [DTM API developer portal](https://dtm-apim-portal.iom.int/)
+- [Official DTM API Python client](https://github.com/Displacement-Tracking-Matrix/dtmapi)
+- [Somalia ETT public dataset listing](https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0)
+
+The project therefore keeps these sources separate. Do not replace ETT weekly observations with DTM API baseline snapshots, and do not infer weekly arrival flows from stock data. The API may be evaluated as a separate future module after its access terms, country coverage, indicator definitions and temporal granularity have been verified. The ETT importer remains schema-first and requires the actual public dataset file or a source-confirmed machine-readable endpoint before normalization.
