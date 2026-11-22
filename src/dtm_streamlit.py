@@ -7,6 +7,7 @@ import plotly.express as px
 import streamlit as st
 
 from src.dtm_api import DTMConnectorError, build_dtm_client, fetch_idp_data
+from src.dtm_advanced_quality import advanced_idp_quality_report
 from src.dtm_explorer import explorer_coverage_summary, filter_idp_snapshot
 from src.dtm_quality import profile_idp_data
 
@@ -133,9 +134,30 @@ def render_dtm_explorer() -> None:
             st.plotly_chart(chart, use_container_width=True)
         st.download_button('Download filtered observations (CSV)', data=displayed.to_csv(index=False).encode('utf-8-sig'), file_name=f'iom_dtm_somalia_admin{admin_level}_observations.csv', mime='text/csv')
 
+    advanced = advanced_idp_quality_report(raw, admin_level)
     with st.expander('Data quality and geographic coverage details'):
-        st.write('Quality diagnostics', quality)
-        st.write('Returned geographic units', summary['geographic_units'])
+        st.write('Basic structural diagnostics', quality)
         st.caption(summary['coverage_interpretation'])
-        st.caption('Basic structural checks do not independently validate source assessments. Returned geographic units are not proof of complete national coverage.')
+        st.write('Returned geographic units', summary['geographic_units'])
+        st.markdown('**Second-stage validation**')
+        g1, g2, g3 = st.columns(3)
+        g1.metric('Unique reporting dates', advanced['temporal']['unique_reporting_dates'])
+        g2.metric('Units with returned records', advanced['geography']['unique_names'])
+        g3.metric('Latest reporting date', advanced['temporal']['latest_reporting_date'] or 'Unavailable')
+        st.write('Geographic code consistency', advanced['geography'])
+        if advanced['parent_geography']['available']:
+            st.write('Parent-region consistency', advanced['parent_geography'])
+        st.markdown('**Reporting-date coverage by returned geographic unit**')
+        coverage = pd.DataFrame(advanced['unit_reporting_coverage'])
+        if not coverage.empty:
+            st.dataframe(coverage, hide_index=True, use_container_width=True)
+        st.markdown('**Demographic and origin-field missingness**')
+        missingness = pd.DataFrame(advanced['demographic_missingness'])
+        if not missingness.empty:
+            st.dataframe(missingness, hide_index=True, use_container_width=True)
+        st.markdown('**Assessment provenance breakdown**')
+        for field, rows in advanced['provenance_breakdown'].items():
+            st.write(field, pd.DataFrame(rows))
+        st.caption(advanced['interpretation'])
+        st.caption('These checks describe returned records only. They do not independently validate source assessments or establish complete national coverage.')
     st.markdown('**Source:** [IOM Displacement Tracking Matrix](https://dtm.iom.int/) · [DTM API documentation](https://dtm.iom.int/data-and-analysis/dtm-api)')
