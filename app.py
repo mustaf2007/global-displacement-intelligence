@@ -12,6 +12,7 @@ from src.ett_timeseries import build_ett_observations, validate_ett_observations
 from src.ett_trends import prepare_ett_trend, trend_readiness
 from src.ett_analysis import regional_distribution, driver_distribution, distribution_summary
 from src.ett_period_comparison import compare_ett_periods
+from src.ett_needs import MAIN_IDP_NEEDS, NEW_ARRIVAL_NEEDS, SOURCE_URL as ETT_WEEK19_PDF_URL, validate_week19_needs
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -738,6 +739,61 @@ if analysis_view == "Somalia subnational data":
         "The report separately records other hazards as <1% and other reasons as <1%. "
         "These categories are shown as reported text rather than being converted to 0%."
     )
+    st.divider()
+    st.subheader("Reported needs and humanitarian response — Week 19")
+    needs_checks = validate_week19_needs()
+    if all(needs_checks.values()):
+        st.caption(
+            "IOM reports these percentages as the share of assessed settlements reporting each need or response. "
+            "They are not percentages of displaced people."
+        )
+        needs_frame = pd.DataFrame(NEW_ARRIVAL_NEEDS)
+        numeric_response = needs_frame[needs_frame["response_pct"].apply(lambda value: isinstance(value, int))].copy()
+        numeric_response = numeric_response.melt(
+            id_vars=["sector"], value_vars=["need_pct", "response_pct"],
+            var_name="measure", value_name="share_pct",
+        )
+        numeric_response["measure"] = numeric_response["measure"].map({
+            "need_pct": "Need reported", "response_pct": "Response reported"
+        })
+        needs_chart = px.bar(
+            numeric_response, x="share_pct", y="sector", color="measure",
+            barmode="group", orientation="h",
+            title="New-arrival needs compared with reported response",
+            labels={"share_pct": "Share of settlements (%)", "sector": "Sector", "measure": ""},
+        )
+        needs_chart.update_layout(
+            height=650, yaxis={"categoryorder": "total ascending"},
+            xaxis={"range": [0, 100]}, margin={"l": 8, "r": 8, "t": 55, "b": 8},
+        )
+        st.plotly_chart(needs_chart, use_container_width=True)
+        st.dataframe(needs_frame, hide_index=True, use_container_width=True)
+        st.caption(
+            "The report records GBV response as <1% and several response categories as 'Not reported'. "
+            "These source values are retained as text and are not converted to zero or included in the numeric chart."
+        )
+        st.download_button(
+            "Download Week 19 new-arrival needs and response (CSV)",
+            data=needs_frame.to_csv(index=False).encode("utf-8-sig"),
+            file_name="somalia_ett_week19_needs_response.csv",
+            mime="text/csv",
+        )
+        settlement_needs_frame = pd.DataFrame(MAIN_IDP_NEEDS)
+        st.markdown("**Main needs of IDPs in assessed locations**")
+        st.caption(
+            "This is a separate measure from new-arrival needs: the report describes the majority of the IDP population in settlements, who may have arrived at any time."
+        )
+        st.dataframe(settlement_needs_frame, hide_index=True, use_container_width=True)
+        st.download_button(
+            "Download main settlement IDP needs (CSV)",
+            data=settlement_needs_frame.to_csv(index=False).encode("utf-8-sig"),
+            file_name="somalia_ett_week19_main_idp_needs.csv",
+            mime="text/csv",
+        )
+        st.markdown(f"**Source:** [IOM Week 19 report PDF]({ETT_WEEK19_PDF_URL})")
+    else:
+        st.error("Week 19 needs transcription validation failed; these indicators are withheld.")
+
     monitored_districts = ett_week19["districts"]
     with st.expander("View the 16 districts monitored in Week 19"):
         st.write(", ".join(monitored_districts))
