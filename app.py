@@ -19,6 +19,7 @@ from src.unhcr import (
     country_period_changes,
     population_measure_type,
     explicit_total_trend,
+    filter_reporting_periods,
 )
 
 st.set_page_config(page_title="Global Refugee & Displacement Intelligence", page_icon="🌍", layout="wide")
@@ -118,9 +119,33 @@ with st.spinner("Retrieving UNHCR population history from 1960 onward..."):
         st.error(f"Unexpected data-loading error: {type(exc).__name__}: {exc}")
         st.stop()
 
+all_periods = sorted(df["time_period"].dropna().astype(str).unique())
+if not all_periods:
+    st.error("UNHCR returned no reporting periods for this population category.")
+    st.stop()
+
+with st.sidebar:
+    st.divider()
+    st.subheader("Historical period range")
+    st.caption("Limit the analysis to an inclusive range. The source data remains unchanged.")
+    range_start = st.selectbox(
+        "From period",
+        all_periods,
+        index=0,
+        key=f"history_start_{selected_type}",
+    )
+    eligible_end_periods = [period for period in all_periods if period >= range_start]
+    range_end = st.selectbox(
+        "To period",
+        eligible_end_periods,
+        index=len(eligible_end_periods) - 1,
+        key=f"history_end_{selected_type}",
+    )
+
+df = filter_reporting_periods(df, range_start, range_end)
 periods = sorted(df["time_period"].dropna().astype(str).unique())
 if not periods:
-    st.error("UNHCR returned no reporting periods for this population category.")
+    st.error("No observations are available inside the selected historical range.")
     st.stop()
 
 selected_period = st.selectbox("Reporting period", periods, index=len(periods) - 1)
@@ -136,7 +161,7 @@ a.metric("Explicit global total", f"{global_total:,.0f}" if global_total is not 
 b.metric("Selected period", selected_period)
 c.metric("Records retrieved", f"{len(df):,}")
 
-st.caption(f"Historical coverage loaded from 1960 onward · Latest available reporting period: {latest_period(df) or 'Unknown'}")
+st.caption(f"Source history starts at 1960 · Selected analysis range: {range_start} to {range_end} · Latest period in range: {latest_period(df) or 'Unknown'}")
 
 # Data quality diagnostics for the currently selected population category.
 quality = audit_population_data(df)
