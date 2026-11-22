@@ -35,6 +35,11 @@ with st.sidebar:
         format_func=lambda code: type_labels.get(code, code),
     )
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
+    analysis_view = st.radio(
+        "Analysis page",
+        ["Country explorer", "Global hosting comparison"],
+        help="Compare country totals across all available hosting countries.",
+    )
 
 with st.spinner("Retrieving the latest UNHCR reporting period for the selected population category..."):
     try:
@@ -54,7 +59,11 @@ if not periods:
     st.stop()
 
 selected_period = st.selectbox("Reporting period", periods, index=len(periods) - 1)
-geo = "ref_area_adm0" if role == "Countries of asylum / hosting" else "area_ori_adm0"
+geo = (
+    "ref_area_adm0"
+    if analysis_view == "Global hosting comparison" or role == "Countries of asylum / hosting"
+    else "area_ori_adm0"
+)
 
 global_total = explicit_global_total(df, selected_type, selected_period)
 a, b, c = st.columns(3)
@@ -64,7 +73,58 @@ c.metric("Records retrieved", f"{len(df):,}")
 
 st.caption(f"Latest reporting period in the retrieved slice: {latest_period(df) or 'Unknown'}")
 st.divider()
-ranking = country_ranking(df, selected_type, geo, selected_period)
+ranking = country_ranking(
+    df, selected_type, geo, selected_period,
+    limit=200 if analysis_view == "Global hosting comparison" else 20,
+)
+
+if analysis_view == "Global hosting comparison":
+    st.header("Global hosting countries comparison")
+    st.caption(
+        f"Country totals for {selected_period} · "
+        f"{type_labels.get(selected_type, selected_type)}"
+    )
+    if ranking.empty:
+        st.warning(
+            "No unambiguous country totals are available for this selection. "
+            "The dashboard does not sum overlapping records."
+        )
+    else:
+        host_total_sum = float(ranking["population"].sum())
+        top_country = ranking.iloc[0]
+        left, middle, right = st.columns(3)
+        left.metric("Countries with reported totals", f"{len(ranking):,}")
+        middle.metric("Largest hosting country", str(top_country["country"]))
+        right.metric("Population in displayed country totals", f"{host_total_sum:,.0f}")
+        comparison_fig = px.bar(
+            ranking.sort_values("population"),
+            x="population",
+            y="country",
+            orientation="h",
+            labels={"population": "People", "country": "Hosting country"},
+            title="Refugee-hosting countries",
+        )
+        comparison_fig.update_layout(
+            height=max(500, 24 * len(ranking)),
+            yaxis_title=None,
+        )
+        st.plotly_chart(comparison_fig, use_container_width=True)
+        st.dataframe(ranking, hide_index=True, use_container_width=True)
+        comparison_export = ranking.copy()
+        comparison_export.insert(0, "reporting_period", selected_period)
+        comparison_export.insert(0, "population_category", selected_type)
+        st.download_button(
+            "Download global hosting comparison (CSV)",
+            data=comparison_export.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"global_hosting_comparison_{selected_type}_{selected_period}.csv",
+            mime="text/csv",
+        )
+    st.info(
+        "These are country-level hosting totals, not a sum across origin countries. "
+        "Do not add population categories together or interpret missing observations as zero."
+    )
+    st.stop()
+
 st.subheader("Country ranking — " + role)
 
 if ranking.empty:
