@@ -48,7 +48,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -218,6 +218,82 @@ if analysis_view == "Global displacement trends":
     st.stop()
 
 
+
+
+if analysis_view == "Somalia subnational data":
+    st.header("Somalia subnational displacement data")
+    st.caption(
+        "A source and coverage workspace for district- and location-level displacement evidence. "
+        "This page distinguishes broad baseline coverage from the narrower, frequently updated ETT series."
+    )
+
+    st.subheader("Latest IOM DTM Emergency Trend Tracking")
+    st.markdown(
+        "**Coverage period:** 14 June – 11 November 2026  \n"
+        "**Data collection:** weekly key-informant interviews at location level  \n"
+        "**Population group:** IDPs  \n"
+        "**Geographical coverage:** partial, not nationwide."
+    )
+    st.info(
+        "IOM reports that the ETT series expanded in October 2026 to 16 districts. "
+        "Coverage varies by reporting week and assessment round; an unassessed district "
+        "must not be interpreted as having zero displacement."
+    )
+    st.link_button(
+        "Open official IOM DTM ETT dataset",
+        "https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0",
+    )
+    st.link_button(
+        "Open Somalia DTM country page and latest reports",
+        "https://dtm.iom.int/somalia",
+    )
+
+    st.divider()
+    st.subheader("Countrywide baseline assessment — Round 3 (2024)")
+    st.markdown(
+        "**Assessment period:** 14 February – 19 September 2024  \n"
+        "**Coverage:** 17 regions and 82 districts  \n"
+        "**Assessment type:** area-based baseline assessment / mobility tracking  \n"
+        "**Population groups:** IDPs, returnees and residents."
+    )
+    st.link_button(
+        "Open official Round 3 baseline dataset",
+        "https://dtm.iom.int/datasets/somalia-baseline-assessment-dataset-round-3-february-2024-september-2024",
+    )
+    st.link_button(
+        "Open 2024 baseline assessment GIS dashboard",
+        "https://dtm.iom.int/",
+    )
+
+    st.divider()
+    st.subheader("Data integration status")
+    st.warning(
+        "District-level observations are not yet loaded into this application. "
+        "The public DTM API documentation describes Admin 1 and Admin 2 outputs, but its "
+        "current API v3 requires a developer account and subscription key. The older API "
+        "versions are no longer maintained. This module therefore links to official public "
+        "datasets rather than scraping unstable page content or presenting invented values."
+    )
+    st.markdown(
+        "**Planned integration fields**  \n"
+        "- Assessment round and reference date  \n"
+        "- Region and district names / administrative codes  \n"
+        "- Population group (IDP, returnee, resident)  \n"
+        "- Population or new-arrival count, preserving the source's measure  \n"
+        "- Displacement reason and settlement type, where published  \n"
+        "- Assessment coverage and source citation"
+    )
+    st.caption(
+        "Important: baseline population presence and weekly ETT new arrivals are different measures. "
+        "They must be stored and visualized separately. New arrivals may include secondary or repeated "
+        "displacement and should not automatically be treated as unique newly displaced persons."
+    )
+    st.markdown(
+        "Sources: [IOM DTM Somalia ETT dataset](https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0) · "
+        "[IOM DTM Somalia baseline dataset](https://dtm.iom.int/datasets/somalia-baseline-assessment-dataset-round-3-february-2024-september-2024) · "
+        "[DTM API documentation](https://dtm.iom.int/data-and-analysis/dtm-api)"
+    )
+    st.stop()
 
 if analysis_view == "Somalia displacement profile":
     st.header("Somalia displacement intelligence profile")
