@@ -133,3 +133,8 @@ python scripts/append_ett_report.py --input path/to/verified_observations.json
 ```
 
 The append utility validates existing and incoming records, rejects duplicate observation keys, and never overwrites an existing observation. The JSON input must be a list of normalized records. Source verification and transcription remain a human review step; passing structural validation does not authenticate a report or its figures. Commit the reviewed registry update to preserve its version history.
+
+
+### Somalia ETT trend readiness
+
+The `src/ett_trends.py` module prepares period-comparable series for a specified indicator, measure type and geographic dimension. It withholds duplicate period keys and invalid numeric values. The dashboard displays a weekly national arrivals line chart only when at least two distinct verified reporting periods are available. Weekly flows, cumulative arrivals, reason shares and regional origin/destination marginals remain separate; no bilateral movement routes are inferred. With the current one-period baseline, the dashboard correctly reports that historical trend analysis is not yet supported.
