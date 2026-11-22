@@ -1174,10 +1174,19 @@ if analysis_view == "Somalia subnational data":
                 row.get("extraction_status") != "verified_observations_in_registry"
                 for row in source_register
             )
+            current_dataset = next((row for row in source_register if row.get("record_id") == "ett_2026_dataset"), None)
             metric_cols = st.columns(3)
             metric_cols[0].metric("Catalogued sources", len(source_register))
             metric_cols[1].metric("With observations loaded", verified_sources)
             metric_cols[2].metric("Awaiting extraction / import", pending_sources)
+            if current_dataset:
+                st.markdown("**Latest IOM ETT dataset catalogue status**")
+                status_cols = st.columns(3)
+                status_cols[0].metric("Dataset data through", current_dataset.get("data_through", current_dataset.get("period_end", "Not reported")))
+                status_cols[1].metric("Catalogue last updated", current_dataset.get("catalogue_last_updated", "Not recorded"))
+                status_cols[2].metric("Weekly periods loaded", "Week 19 only")
+                st.warning("The catalogue is newer than the weekly observations currently loaded in this dashboard. The public dataset file has not yet been imported; do not interpret the catalogue end date as a verified weekly observation or a current estimate.")
+                st.link_button("Open IOM ETT public dataset", current_dataset["source_url"])
             st.caption(
                 "This register separates source discovery from numerical extraction. "
                 "A listed report is not treated as a verified observation until its figures "
@@ -1185,7 +1194,7 @@ if analysis_view == "Somalia subnational data":
             )
             display_source_cols = [
                 "title", "source_type", "period_start", "period_end",
-                "coverage_districts", "coverage_districts_basis", "extraction_status", "source_url",
+                "coverage_districts", "coverage_districts_basis", "catalogue_last_updated", "data_through", "extraction_status", "source_url",
             ]
             st.dataframe(
                 source_frame[display_source_cols],

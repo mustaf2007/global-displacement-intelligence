@@ -30,6 +30,14 @@ class ETTSourceRegisterTests(unittest.TestCase):
             self.assertIn(row["extraction_status"], statuses)
             self.assertLessEqual(row["period_start"], row["period_end"])
 
+    def test_current_dataset_catalogue_freshness_is_explicit(self):
+        by_id = {row["record_id"]: row for row in self.records}
+        dataset = by_id["ett_2026_dataset"]
+        self.assertEqual(dataset["catalogue_last_updated"], "2026-11-17")
+        self.assertEqual(dataset["catalogue_last_checked"], "2026-11-22")
+        self.assertEqual(dataset["data_through"], "2026-11-11")
+        self.assertEqual(dataset["extraction_status"], "source_catalogued_dataset_file_not_imported")
+
     def test_only_week19_is_marked_as_weekly_observations_loaded(self):
         loaded = [
             row["record_id"] for row in self.records

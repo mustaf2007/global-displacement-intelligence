@@ -21,9 +21,12 @@
     "period_end": "2026-11-11",
     "coverage_districts": null,
     "extraction_status": "source_catalogued_dataset_file_not_imported",
-    "notes": "Official public dataset page; downloadable source file has not yet been ingested. The Week 19 report states that data collection paused from 1–16 October 2026 and resumed on 17 October with in-person interviews in 16 districts. The series therefore has a material collection gap and a methodology/coverage transition; do not interpolate missing weeks or interpret the break as zero displacement. Methodological limitations from the official Q2 2026 report: findings are estimates from remote and in-person key-informant interviews; most indicators describe the majority of displaced people at a location rather than every person; detailed origins are not fully collected/reported; districts cover main urban centres and surrounding areas rather than full district populations; GPS coordinates may be approximate. Treat origin and cause breakdowns as reported majority estimates, not exhaustive person-level records.",
+    "notes": "Official public dataset page; downloadable source file has not yet been ingested. The Week 19 report states that data collection paused from 1–16 October 2026 and resumed on 17 October with in-person interviews in 16 districts. The series therefore has a material collection gap and a methodology/coverage transition; do not interpolate missing weeks or interpret the break as zero displacement. Methodological limitations from the official Q2 2026 report: findings are estimates from remote and in-person key-informant interviews; most indicators describe the majority of displaced people at a location rather than every person; detailed origins are not fully collected/reported; districts cover main urban centres and surrounding areas rather than full district populations; GPS coordinates may be approximate. Treat origin and cause breakdowns as reported majority estimates, not exhaustive person-level records. The IOM Somalia countrywide operation catalogue listed this dataset as updated on 17 November 2026; the dataset metadata reports coverage through 11 November 2026. This catalogue update date is not an additional reporting observation.",
     "catalogue_url": "https://dtm.iom.int/somalia",
-    "coverage_districts_basis": "round_level_or_report_metadata"
+    "coverage_districts_basis": "round_level_or_report_metadata",
+    "catalogue_last_updated": "2026-11-17",
+    "catalogue_last_checked": "2026-11-22",
+    "data_through": "2026-11-11"
   },
   {
     "record_id": "ett_2026_q3",
