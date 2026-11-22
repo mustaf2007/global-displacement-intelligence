@@ -17,7 +17,7 @@ An open-source Streamlit research dashboard for exploring official population st
 - Global displacement trends, decade-level summaries that treat stock and flow measures separately, and multi-country historical comparisons, and country profiles across separately reported refugee, IDP, asylum-seeker and other population categories using explicit UNHCR total records only.
 - Descriptive displacement-pressure signals with strict missing-data and comparability rules.
 - Somalia hosting/origin profile and a subnational displacement data workspace.
-- Somalia IOM DTM Emergency Trend Tracking (ETT) Week 19 snapshot, with origin and destination marginal distributions, regional map, CSV exports and reconciliation checks.
+- Somalia IOM DTM Emergency Trend Tracking (ETT) Week 19 historical reference and verified Week 20 snapshot, with separate origin/destination marginal distributions, regional map, CSV exports, period comparison and reconciliation checks.
 - Safeguards against creating global totals by summing overlapping records.
 
 The platform is a research and monitoring prototype. It does not currently implement predictive machine learning or individual origin-to-destination route modelling.
@@ -76,15 +76,15 @@ The dashboard includes UNHCR global population-statistics analysis and a separat
 
 The Somalia subnational workspace presents IOM DTM Emergency Trend Tracking (ETT) information separately from UNHCR population stocks.
 
-- The displayed Week 19 snapshot reports 10,451 new arrivals, 114,553 cumulative arrivals since June 2026 and 16 assessed districts.
+- The latest integrated report snapshot is Week 20 (7–11 November 2026): 10,013 new arrivals, 124,566 cumulative arrivals since 14 June 2026 and 16 assessed districts. Week 19 (31 October–4 November 2026) is retained and labelled as historical reference: 10,451 new arrivals and 114,553 cumulative arrivals.
 - Origin and destination region counts are separate marginal distributions. They are not a person-level origin–destination matrix and cannot establish bilateral routes, net migration or regional gains/losses.
-- The origin and destination distributions each sum arithmetically to the reported Week 19 headline. This is a consistency check, not proof that each record represents a unique person or one-to-one movement.
+- The Week 19 and Week 20 origin and destination distributions are stored and presented as separate marginal summaries. Each reported distribution reconciles arithmetically to its own weekly headline; this is a consistency check, not proof of unique persons or one-to-one movement.
 - ETT new arrivals are event-tracking flows and must not be interpreted as the total IDP population currently residing in Somalia. Secondary or repeated displacement may be included.
 - Monitoring coverage is partial and changes over time. An unassessed district is not a zero-displacement district.
 - ETT findings are estimates based on remote and in-person key-informant interviews, not a census or person-level registration. Many indicators describe the majority of displaced people at a location; detailed origins are not exhaustive.
 - Coverage focuses on main urban centres and surrounding areas in assessed districts, not every settlement or the full district population. GPS coordinates may be approximate.
 - Weekly comparisons must account for changing district coverage, collection pauses and interview-mode changes; missing weeks must not be interpolated as observed zeroes.
-- Week 20 report availability is linked in the app, but its numerical figures are not displayed until extracted and verified.
+- Week 20 headline, cause-share, origin and destination observations are integrated from the three-page report copy supplied for project extraction. The source register records this provenance; the public dataset file itself has not yet been ingested.
 
 Sources:
 - [IOM DTM Somalia](https://dtm.iom.int/somalia)
@@ -110,7 +110,7 @@ The dashboard displays a global total only when a unique explicit total record i
 
 ### Somalia integrated displacement profile
 
-The Somalia profile presents UNHCR population-statistics series and IOM DTM Emergency Trend Tracking evidence in separate sections. The IOM Week 19 snapshot (31 October–4 November 2026) reports 10,451 new arrivals, 114,553 cumulative arrivals since 14 June, and 16 assessed districts. The profile labels these as period-specific arrival flows from partial monitoring coverage, not the total IDP population. UNHCR population measures and IOM ETT arrival flows are not added or treated as directly equivalent. Week 20 is linked as a source, but its figures are not displayed until extracted and validated.
+The Somalia profile presents UNHCR population-statistics series and IOM DTM Emergency Trend Tracking evidence in separate sections. The IOM Week 20 snapshot (7–11 November 2026) reports 10,013 new arrivals, 124,566 cumulative arrivals since 14 June, and 16 assessed districts. Week 19 (31 October–4 November 2026) is retained as a historical reference with 10,451 new arrivals and 114,553 cumulative arrivals. Both are period-specific arrival-flow estimates from partial monitoring coverage, not the total IDP population. UNHCR population measures and IOM ETT arrival flows are not added or treated as directly equivalent. Week 20 figures were transcribed from the three-page report copy supplied for this project and passed arithmetic/schema checks; this does not independently authenticate the extraction or establish full geographic coverage.
 
 
 The Somalia profile also presents IOM Week 19 origin-region and destination-region distributions as separate marginal summaries. Both published distributions sum to 10,451, matching the weekly arrival total. They are not bilateral origin-to-destination flows and must not be used to infer routes or pair individual origins with destinations.
@@ -118,7 +118,7 @@ The Somalia profile also presents IOM Week 19 origin-region and destination-regi
 
 ### Somalia ETT snapshot validation
 
-The Week 19 IOM ETT values are stored in `src/somalia_ett.py` as a source-attributed, manually transcribed snapshot rather than a live feed. The module provides a defensive-copy accessor and explicit checks for: weekly/cumulative count plausibility, unique district coverage, district-count consistency, origin and destination marginal totals, and cause-share arithmetic. Unit tests exercise successful validation, a deliberately corrupted distribution, district uniqueness, and mutation isolation. These checks establish internal arithmetic consistency only; they do not independently authenticate the source extraction, prove geographic completeness, or link origin and destination records into routes. Week 20 remains excluded until its numerical contents are independently extracted and verified.
+The Week 19 historical snapshot is stored in `src/somalia_ett.py`; the Week 20 report-derived snapshot is stored in `src/somalia_ett_week20.py`. Both are static, source-attributed snapshots, not live feeds. Their validation checks cover internal arithmetic and schema consistency, including district uniqueness/counts, origin and destination marginal totals, and quantified cause shares. Passing these checks does not independently authenticate source transcription, prove geographic completeness, or link origins and destinations into routes.
 
 
 The Somalia subnational page includes a Week 19 validation and provenance panel. It displays each structural/arithmetic check, identifies the source report and reporting period, and provides a JSON export containing the snapshot and validation results for reproducibility. A passed check means internal consistency only; it is not an independent source audit or confirmation of nationwide coverage.
@@ -126,7 +126,7 @@ The Somalia subnational page includes a Week 19 validation and provenance panel.
 
 ### Somalia ETT normalized observations
 
-The Week 19 snapshot can be represented as a long-format observation table through `src/ett_timeseries.py`. Each record retains source attribution, reporting-period dates, coverage, population group, indicator, measure type, geographic dimension, geography, value and unit. The initial release contains one verified reporting period only; it does not manufacture missing weeks or imply a complete time series. Weekly arrivals, cumulative arrivals, regional origin/destination distributions and reported reason shares remain distinct measures. Validation checks required fields, non-negative numeric values, valid period ordering and unique observation keys. The dashboard provides CSV export of these normalized records. The normalized table is a foundation for future weekly ingestion, not a claim that automated historical ingestion is already available.
+The normalized registry at `data/somalia_ett_observations.json` currently contains two verified report periods (Weeks 19 and 20). Records retain source attribution, reporting-period dates, coverage, population group, indicator, measure type, geographic dimension, geography, value and unit. The reusable builder in `src/ett_timeseries.py` currently builds the Week 19 seed snapshot; Week 20 is transcribed and normalized in `src/somalia_ett_week20.py`. Weekly arrivals, cumulative arrivals, regional origin/destination distributions and reported reason shares remain distinct measures. Validation checks required fields, non-negative numeric values, valid period ordering and unique observation keys. The dashboard provides CSV exports. The registry is not a complete weekly time series and does not imply automated historical ingestion.
 
 
 A versioned baseline registry is stored at `data/somalia_ett_observations.json`. To initialize or append a reviewed batch locally:
@@ -141,9 +141,9 @@ The append utility validates existing and incoming records, rejects duplicate ob
 
 ### Somalia ETT trend readiness
 
-The `src/ett_trends.py` module prepares period-comparable series for a specified indicator, measure type and geographic dimension. It withholds duplicate period keys and invalid numeric values. The dashboard displays a weekly national arrivals line chart only when at least two distinct verified reporting periods are available. Weekly flows, cumulative arrivals, reason shares and regional origin/destination marginals remain separate; no bilateral movement routes are inferred. With the current one-period baseline, the dashboard correctly reports that historical trend analysis is not yet supported.
+The `src/ett_trends.py` module prepares period-comparable series for a specified indicator, measure type and geographic dimension. It withholds duplicate period keys and invalid numeric values. The dashboard displays a weekly national arrivals line chart only when at least two distinct verified reporting periods are available. Weekly flows, cumulative arrivals, reason shares and regional origin/destination marginals remain separate; no bilateral movement routes are inferred. The current registry contains two verified weekly reporting periods (Weeks 19 and 20). The dashboard may show a clearly labelled two-period comparison, but this is not a robust long-term trend. Earlier weeks remain untranscribed, and the October collection pause plus changing district coverage and interview mode limit comparability.
 
-The committed JSON registry is also checked against the Week 19 observation builder in `tests/test_ett_registry_data.py`. This guards against accidental drift between the dashboard's seed records and the reproducible source transcription.
+The committed JSON registry is checked for the verified Week 19 and Week 20 periods by the registry tests. The Week 19 seed builder remains a specific reproducible builder, not a generator for all periods.
 
 
 ### Somalia ETT regional and driver analysis

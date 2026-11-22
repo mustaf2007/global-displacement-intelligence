@@ -1,7 +1,8 @@
 """Normalized, auditable observations for the Somalia IOM DTM ETT series.
 
-The initial release contains only the verified Week 19 snapshot. It is not a
-complete weekly time series and does not fabricate values for earlier weeks.
+The reusable builder creates the verified Week 19 seed snapshot. The committed
+registry also contains the separately transcribed Week 20 report snapshot; it is
+not a complete weekly time series and does not fabricate missing periods.
 """
 from datetime import date
 
