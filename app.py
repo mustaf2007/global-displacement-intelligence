@@ -32,6 +32,10 @@ def country_iso3(country_name):
         "State of Palestine": "PSE",
         "Palestine": "PSE",
         "Kosovo": "XKX",
+        "Cayman Islands (GBR)": "CYM",
+        "Sint Maarten (K. of the Netherlands)": "SXM",
+        "Turks and Caicos Islands (GBR)": "TCA",
+        "British Virgin Islands (GBR)": "VGB",
     }
     if pd.isna(country_name):
         return None
