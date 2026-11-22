@@ -449,6 +449,18 @@ if analysis_view == "Somalia subnational data":
         file_name="somalia_ett_week19_destination_regions.csv",
         mime="text/csv",
     )
+    destination_total = int(destinations["New arrivals"].sum())
+    st.metric("Sum of reported destination counts", f"{destination_total:,}")
+    if destination_total != 10451:
+        st.warning(
+            "The published destination-region counts do not reconcile to the Week 19 "
+            "headline total; review the source report before interpreting the difference."
+        )
+    else:
+        st.caption(
+            "The seven reported destination-region counts sum to the Week 19 headline "
+            "total of 10,451. This arithmetic check does not establish individual routes."
+        )
 
     origins = pd.DataFrame({
         "Origin": [
