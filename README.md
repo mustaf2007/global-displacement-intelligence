@@ -13,10 +13,14 @@ An open-source Streamlit research dashboard for exploring official population st
 - Source schema validation and numeric parsing.
 - Population-category and reporting-period filters.
 - Country-of-asylum/hosting and country-of-origin rankings.
-- Historical country trend when unique headline records exist.
+- Historical country trends, reporting-period coverage and comparable-period change analysis.
+- Global displacement trends using explicit UNHCR total records only.
+- Descriptive displacement-pressure signals with strict missing-data and comparability rules.
+- Somalia hosting/origin profile and a subnational displacement data workspace.
+- Somalia IOM DTM Emergency Trend Tracking (ETT) Week 19 snapshot, with origin and destination marginal distributions, regional map, CSV exports and reconciliation checks.
 - Safeguards against creating global totals by summing overlapping records.
 
-This is an initial research dashboard. Predictive machine learning is not yet implemented.
+The platform is a research and monitoring prototype. It does not currently implement predictive machine learning or individual origin-to-destination route modelling.
 
 ## Public data access
 
@@ -66,7 +70,25 @@ Inspect UNHCR metadata and constraints before extending the indicators.
 
 ## Project status
 
-Initial dashboard implementation. The development runtime could not directly reach the UNHCR API during the initial build, so live CSV retrieval has not been independently smoke-tested here. The app validates the schema on download; verify live behaviour before using results in policy or research outputs.
+The dashboard includes UNHCR global population-statistics analysis and a separately sourced Somalia IOM DTM ETT research workspace. GitHub Actions runs automated checks on repository changes. A successful CI run verifies the checks in the workflow; it does not certify the completeness of external data, guarantee third-party API uptime, or independently validate every live map service. Verify source releases and coverage before using results in policy or research outputs.
+
+## Somalia displacement data: interpretation and coverage
+
+The Somalia subnational workspace presents IOM DTM Emergency Trend Tracking (ETT) information separately from UNHCR population stocks.
+
+- The displayed Week 19 snapshot reports 10,451 new arrivals, 114,553 cumulative arrivals since June 2026 and 16 assessed districts.
+- Origin and destination region counts are separate marginal distributions. They are not a person-level origin–destination matrix and cannot establish bilateral routes, net migration or regional gains/losses.
+- The origin and destination distributions each sum arithmetically to the reported Week 19 headline. This is a consistency check, not proof that each record represents a unique person or one-to-one movement.
+- ETT new arrivals are event-tracking flows and must not be interpreted as the total IDP population currently residing in Somalia. Secondary or repeated displacement may be included.
+- Monitoring coverage is partial and changes over time. An unassessed district is not a zero-displacement district.
+- Week 20 report availability is linked in the app, but its numerical figures are not displayed until extracted and verified.
+
+Sources:
+- [IOM DTM Somalia](https://dtm.iom.int/somalia)
+- [IOM Somalia ETT dataset](https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0)
+- [IOM Week 19 ETT report](https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-19-31-october-04-november-2026)
+
+The current DTM dataset page is a source and coverage reference. Do not assume that a keyless, stable machine-readable API is available: the DTM API v3 requires a developer account/subscription key, and older API versions are no longer maintained.
 
 ## Attribution
 
