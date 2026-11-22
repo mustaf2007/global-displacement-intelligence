@@ -450,6 +450,50 @@ if analysis_view == "Somalia subnational data":
         mime="text/csv",
     )
 
+    origins = pd.DataFrame({
+        "Origin": [
+            "Bay", "Middle Shabelle", "Hiraan", "Gedo", "Lower Shabelle",
+            "Bakool", "Banadir", "Lower Juba", "Middle Juba", "Ethiopia",
+        ],
+        "New arrivals": [3528, 1862, 1105, 875, 789, 760, 472, 512, 375, 173],
+    }).sort_values("New arrivals", ascending=False)
+    origin_total = int(origins["New arrivals"].sum())
+    st.markdown("**Reported origins of new arrivals — Week 19**")
+    st.caption(
+        "Origin counts are presented separately from destination counts. They describe "
+        "different sides of the movement record and must not be added together."
+    )
+    st.metric("Sum of reported origin counts", f"{origin_total:,}")
+    st.plotly_chart(
+        px.bar(
+            origins,
+            x="New arrivals",
+            y="Origin",
+            orientation="h",
+            title="Reported origins of new arrivals — Week 19",
+            text="New arrivals",
+        ).update_layout(height=430, yaxis={"categoryorder": "total ascending"}),
+        use_container_width=True,
+    )
+    st.dataframe(origins, hide_index=True, use_container_width=True)
+    st.download_button(
+        "Download Week 19 origin data (CSV)",
+        data=origins.to_csv(index=False).encode("utf-8-sig"),
+        file_name="somalia_ett_week19_origin_regions.csv",
+        mime="text/csv",
+    )
+    if origin_total != 10451:
+        st.warning(
+            "The published origin counts do not reconcile to the weekly headline total; "
+            "review the source report before interpreting the difference."
+        )
+    else:
+        st.caption(
+            "The ten reported origin counts sum to the Week 19 headline total of 10,451. "
+            "This arithmetic check does not imply that every origin is within Somalia; "
+            "Ethiopia is a reported cross-border origin."
+        )
+
     st.divider()
     st.subheader("Countrywide baseline assessment — Round 3 (2024)")
     st.markdown(
