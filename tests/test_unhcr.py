@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals, filter_reporting_periods, decade_comparison, country_historical_comparison
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals, filter_reporting_periods, decade_comparison, country_historical_comparison, country_profile_series
 
 
 class FetchAllTests(unittest.TestCase):
@@ -212,4 +212,26 @@ class CountryHistoricalComparisonTests(unittest.TestCase):
 
     def test_invalid_geography_returns_empty(self):
         result = country_historical_comparison(self.frame, "REF_UNHCR", "invalid", ["KEN"])
+        self.assertTrue(result.empty)
+
+
+class CountryProfileSeriesTests(unittest.TestCase):
+    def test_keeps_population_categories_separate(self):
+        refugee = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2020", "obs_value": 100, "ref_area_adm0": "SOM", "ref_area_adm0_label": "Somalia", "area_ori_adm0": "_T"},
+        ])
+        asylum = pd.DataFrame([
+            {"pop_type": "ASY", "time_period": "2020", "obs_value": 20, "ref_area_adm0": "SOM", "ref_area_adm0_label": "Somalia", "area_ori_adm0": "_T"},
+        ])
+        result = country_profile_series(
+            {"REF_UNHCR": refugee, "ASY": asylum},
+            "SOM",
+            "ref_area_adm0",
+        )
+        self.assertEqual(set(result["pop_type"]), {"REF_UNHCR", "ASY"})
+        self.assertEqual(result["population"].sum(), 120)
+        self.assertEqual(set(result["measure_type"]), {"stock"})
+
+    def test_empty_category_frames_return_empty_profile(self):
+        result = country_profile_series({}, "SOM", "ref_area_adm0")
         self.assertTrue(result.empty)
