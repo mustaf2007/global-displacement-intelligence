@@ -155,6 +155,28 @@ else:
                 if "share_of_host_total_pct" in origins.columns:
                     display_cols.append("share_of_host_total_pct")
                 st.dataframe(origins[display_cols], hide_index=True, use_container_width=True)
+
+                # Portable, source-labelled country profile data export.
+                export = origins[display_cols].copy()
+                export.insert(0, "reporting_period", selected_period)
+                export.insert(0, "population_category", selected_type)
+                export.insert(0, "hosting_country", chosen)
+                export["hosting_country_total"] = host_total
+                export["origin_records_total"] = origin_sum
+                export["origin_coverage_pct"] = (
+                    origin_sum / host_total * 100 if host_total else None
+                )
+                st.download_button(
+                    "Download country profile data (CSV)",
+                    data=export.to_csv(index=False).encode("utf-8-sig"),
+                    file_name=(
+                        f"{selected_geo_code}_{selected_type}_{selected_period}_"
+                        "country_profile.csv"
+                    ),
+                    mime="text/csv",
+                    help="Exports the displayed origin-country records with population category, "
+                         "hosting country, reporting period, total and coverage metadata.",
+                )
             else:
                 st.info(
                     "No unambiguous country-of-origin records were returned for this hosting country "
