@@ -6,6 +6,7 @@ import pycountry
 import requests
 import streamlit as st
 from src.geo import country_iso3
+from src.dtm_streamlit import render_dtm_explorer
 from src.quality import audit_population_data, reconciliation_by_period
 from src.somalia_ett import get_week19_snapshot, validate_week19_snapshot
 from src.ett_timeseries import build_ett_observations, validate_ett_observations
@@ -74,7 +75,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Country historical comparison", "Country profile comparison", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Country historical comparison", "Country profile comparison", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data", "IOM DTM API explorer"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -117,6 +118,10 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+if analysis_view == "IOM DTM API explorer":
+    render_dtm_explorer()
+    st.stop()
 
 with st.spinner("Retrieving UNHCR population history from 1960 onward..."):
     try:
