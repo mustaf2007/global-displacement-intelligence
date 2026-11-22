@@ -94,7 +94,7 @@ def latest_period(frame: pd.DataFrame) -> str | None:
 
 def population_types() -> list[str]:
     """Common population-type codes in UNHCR's official population series."""
-    return ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP", "STA"]
+    return ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "STA"]
 
 
 def explicit_global_total(frame: pd.DataFrame, pop_type: str, period: str) -> float | None:
