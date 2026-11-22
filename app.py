@@ -506,6 +506,46 @@ if analysis_view == "Somalia subnational data":
             "Ethiopia is a reported cross-border origin."
         )
 
+    st.subheader("Week 19 consistency audit")
+    consistency_checks = pd.DataFrame([
+        {
+            "Check": "Reported origin counts",
+            "Observed": f"{origin_total:,}",
+            "Reference": "10,451 headline arrivals",
+            "Result": "Pass" if origin_total == 10451 else "Review",
+        },
+        {
+            "Check": "Reported destination counts",
+            "Observed": f"{destination_total:,}",
+            "Reference": "10,451 headline arrivals",
+            "Result": "Pass" if destination_total == 10451 else "Review",
+        },
+        {
+            "Check": "Reported displacement-cause shares",
+            "Observed": f"{causes['Share (%)'].sum():.0f}%",
+            "Reference": "100% across four displayed causes",
+            "Result": "Pass" if causes["Share (%)"].sum() == 100 else "Review",
+        },
+    ])
+    st.dataframe(consistency_checks, hide_index=True, use_container_width=True)
+    if consistency_checks["Result"].eq("Review").any():
+        st.warning(
+            "At least one arithmetic check does not match its reference. "
+            "Review the underlying report before drawing conclusions."
+        )
+    else:
+        st.caption(
+            "All three arithmetic checks reconcile. These checks confirm internal sums only; "
+            "they do not verify person-level uniqueness, route linkages, or completeness beyond "
+            "the published reporting coverage."
+        )
+    st.download_button(
+        "Download Week 19 consistency audit (CSV)",
+        data=consistency_checks.to_csv(index=False).encode("utf-8-sig"),
+        file_name="somalia_ett_week19_consistency_audit.csv",
+        mime="text/csv",
+    )
+
     st.subheader("Origin and destination profile — Week 19")
     origin_col, destination_col = st.columns(2)
     origin_col.metric(
