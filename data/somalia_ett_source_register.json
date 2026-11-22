@@ -21,7 +21,7 @@
     "period_end": "2026-11-11",
     "coverage_districts": null,
     "extraction_status": "source_catalogued_dataset_file_not_imported",
-    "notes": "Official public dataset page; downloadable source file has not yet been ingested into the application.",
+    "notes": "Official public dataset page; downloadable source file has not yet been ingested. The Week 19 report states that data collection paused from 1–16 October 2026 and resumed on 17 October with in-person interviews in 16 districts. The series therefore has a material collection gap and a methodology/coverage transition; do not interpolate missing weeks or interpret the break as zero displacement.",
     "catalogue_url": "https://dtm.iom.int/somalia",
     "coverage_districts_basis": "round_level_or_report_metadata"
   },
