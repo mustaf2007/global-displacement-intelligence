@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types
 
 
 class FetchAllTests(unittest.TestCase):
@@ -22,6 +22,11 @@ class FetchAllTests(unittest.TestCase):
         request_page.return_value = {"data": [{"id": 1}], "pagination": {"has_next": True}}
         with self.assertRaises(UNHCRDataError):
             _fetch_all({}, max_pages=1)
+
+    def test_population_types_use_valid_idp_subcategories(self):
+        self.assertIn("IDP_UNHCR", population_types())
+        self.assertIn("IDP_IDMC", population_types())
+        self.assertNotIn("IDP", population_types())
 
 
 class PopulationAggregationTests(unittest.TestCase):
