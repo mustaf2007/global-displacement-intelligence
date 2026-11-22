@@ -61,6 +61,8 @@ def main() -> int:
     except (requests.RequestException, ValueError) as exc:
         summary["constraints_error"] = str(exc)
 
+    configured_missing = sorted(set(POPULATION_TYPES).difference(valid_types))
+    summary["configured_population_types_missing_from_constraints"] = configured_missing
     for pop_type in POPULATION_TYPES:
         params = {
             "c[pop_type]": pop_type,
@@ -127,6 +129,7 @@ def main() -> int:
         code for code, result in summary["population_types"].items()
         if result.get("status") != "ok"
     ]
+    failed.extend(configured_missing)
     summary["overall_status"] = "ok" if not failed else "warning"
     summary["population_types_with_issues"] = failed
     print(json.dumps(summary, indent=2))
