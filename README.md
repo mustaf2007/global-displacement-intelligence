@@ -8,10 +8,10 @@ An open-source Streamlit research dashboard for exploring official population st
 
 ## Current features
 
-- Automatic download of the complete UNHCR population-statistics CSV.
+- On-demand retrieval of all available UNHCR population-statistics records from 1960 onward for the selected category, with pagination and a 24-hour cache.
 - 24-hour application cache to reduce repeated API requests.
 - Source schema validation and numeric parsing.
-- Population-category and reporting-period filters.
+- Population-category and reporting-period filters, including all periods returned from 1960 onward.
 - Country-of-asylum/hosting and country-of-origin rankings.
 - Historical country trends, reporting-period coverage and comparable-period change analysis.
 - Global displacement trends using explicit UNHCR total records only.
@@ -48,7 +48,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The first run downloads the full dataset. An internet connection to `api-data.unhcr.org` is required.
+The first run retrieves the selected population category's available history from 1960 onward. An internet connection to `api-data.unhcr.org` is required; large categories may take longer because the API is paginated.
 
 ## Deploy
 
