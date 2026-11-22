@@ -3,7 +3,7 @@ import plotly.express as px
 import pycountry
 import streamlit as st
 from src.geo import country_iso3
-from src.quality import audit_population_data
+from src.quality import audit_population_data, reconciliation_by_period
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -98,6 +98,24 @@ with st.expander("Data Quality & Sources", expanded=False):
             st.success("No issues were detected by these checks in the retrieved dataset.")
     st.markdown("**Source:** [UNHCR Population Statistics](https://refugeedata.unhcr.org/en/data-finder/detail/PopStatsOfficial/data/)  \\n**API:** [UNHCR technical reference](https://refugeedata.unhcr.org/en/documentation/technical-reference/api/)")
     st.caption(f"Retrieved records: {len(df):,} · Selected reporting period: {selected_period}")
+
+    st.markdown("**Period reconciliation (diagnostic only)**")
+    reconciliation = reconciliation_by_period(df, "ref_area_adm0")
+    if reconciliation.empty:
+        st.info("The available fields are insufficient for period reconciliation.")
+    else:
+        st.caption("Compares an explicit UNHCR total row with distinct country-level hosting records. A country sum is not an official global total and is never substituted for a missing source total.")
+        st.dataframe(reconciliation, hide_index=True, use_container_width=True)
+        st.download_button(
+            "Download reconciliation report (CSV)",
+            data=reconciliation.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"unhcr_reconciliation_{selected_type}.csv",
+            mime="text/csv",
+        )
+        if reconciliation["status"].eq("duplicate_country_keys").any():
+            st.warning("Some periods contain repeated country keys; country sums are withheld for those periods.")
+        if reconciliation["status"].eq("no_unique_explicit_total").any():
+            st.info("Some periods have no unique explicit global total. Their country sums are not promoted to global totals.")
 st.divider()
 ranking = country_ranking(
     df, selected_type, geo, selected_period,
