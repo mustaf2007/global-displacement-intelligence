@@ -145,3 +145,8 @@ The committed JSON registry is also checked against the Week 19 observation buil
 ### Somalia ETT regional and driver analysis
 
 The `src/ett_analysis.py` module calculates ranked origin and destination distributions, percentage shares, and within-distribution concentration (HHI). It also ranks quantified displacement-reason shares. Origin and destination marginals are never joined into inferred routes. The dashboard displays the largest reported origin and destination, separate regional tables, and the quantified driver breakdown. Textual categories reported as “<1%” are not coerced to numeric zero. These are descriptive summaries of the partial Week 19 monitoring coverage, not nationwide estimates or causal attribution.
+
+
+### Coverage-aware period comparison
+
+The `src/ett_period_comparison.py` module compares the same reported regions or reason categories across two explicitly named reporting periods. It reports shared, added and removed units, and labels coverage as comparable, partial overlap or no shared units. Only shared units receive a value-change calculation; missing units are never filled with zero. A change in assessed geography is explicitly flagged so users do not mistake coverage expansion for a change in displacement patterns. This module is ready for future multi-period verified observations; it does not create a trend from the current single-period baseline.
