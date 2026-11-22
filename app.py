@@ -11,6 +11,7 @@ from src.unhcr import (
     country_ranking,
     country_trend,
     explicit_global_total,
+    explicit_global_total_result,
     latest_period,
     load_population_data,
     country_origin_breakdown,
@@ -158,11 +159,24 @@ geo = (
     else "area_ori_adm0"
 )
 
-global_total = explicit_global_total(df, selected_type, selected_period)
+global_total, global_total_status = explicit_global_total_result(df, selected_type, selected_period)
 a, b, c = st.columns(3)
-a.metric("Explicit global total", f"{global_total:,.0f}" if global_total is not None else "Not supplied")
+a.metric("Source-reported global total", f"{global_total:,.0f}" if global_total is not None else "Unavailable")
 b.metric("Selected period", selected_period)
 c.metric("Records retrieved", f"{len(df):,}")
+
+total_status_messages = {
+    "reported": "A unique explicit global total is available in the source data for this category and period.",
+    "not_reported": "UNHCR has not supplied an explicit global-total record for this category and period in the retrieved data. Country-level records, where available, are shown separately and are not summed to manufacture a global total.",
+    "ambiguous": "More than one distinct explicit global-total value was found. The dashboard withholds the figure pending source-level verification.",
+    "reported_without_value": "A global-total record exists, but its reported value is missing or non-numeric.",
+    "unavailable_geography": "The retrieved data do not include the geographic dimensions needed to identify an explicit global total.",
+    "unavailable_schema": "The retrieved data are missing required fields for validating an explicit global total.",
+}
+if global_total_status == "reported":
+    st.caption(total_status_messages[global_total_status])
+else:
+    st.info(total_status_messages.get(global_total_status, "An explicit global total could not be validated from the retrieved source records."))
 
 st.caption(f"Source history starts at 1960 · Selected analysis range: {range_start} to {range_end} · Latest period in range: {latest_period(df) or 'Unknown'}")
 
