@@ -276,12 +276,14 @@ if analysis_view == "Somalia subnational data":
                 "Expanded coverage: July–September 2026",
                 "Expanded coverage from 17 October 2026",
                 "Week 19 reporting period",
+                "Week 20 reporting period",
             ],
             "Coverage detail": [
                 "5 districts: Baidoa, Dayniile, Diinsoor, Doolow and Kahda",
                 "8 additional districts were phased in; up to 13 districts in total",
                 "11 additional districts were added, expanding the series to 16 districts",
                 "16 districts assessed",
+                "16 districts assessed; numerical figures not yet integrated into this dashboard",
             ],
             "Reference": [
                 "14 June 2026",
