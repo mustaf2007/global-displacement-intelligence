@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.express as px
+import plotly.io as pio
 import pycountry
 import requests
 import streamlit as st
@@ -21,8 +22,6 @@ from src.unhcr import (
 )
 
 st.set_page_config(page_title="Global Refugee & Displacement Intelligence", page_icon="🌍", layout="wide")
-st.title("🌍 Global Refugee & Displacement Intelligence")
-st.caption("Official population statistics from the UNHCR Refugee Data Portal")
 
 type_labels = {
     "REF_UNHCR": "Refugees under UNHCR's mandate",
@@ -38,7 +37,21 @@ type_labels = {
     "STA": "Stateless people",
 }
 
+theme_palettes = {
+    "Light": {"page": "#F5F7FB", "surface": "#FFFFFF", "sidebar": "#EEF2F7", "text": "#172033", "muted": "#64748B", "accent": "#2563EB", "border": "#DCE3ED", "plotly": "plotly_white"},
+    "Green": {"page": "#F1F7F1", "surface": "#FFFFFF", "sidebar": "#E5F0E5", "text": "#183528", "muted": "#5C7566", "accent": "#238653", "border": "#D1E2D4", "plotly": "plotly_white"},
+    "Dark": {"page": "#101722", "surface": "#182332", "sidebar": "#131E2B", "text": "#E8EEF7", "muted": "#A6B4C6", "accent": "#62A8FF", "border": "#2B3B4E", "plotly": "plotly_dark"},
+    "Ocean": {"page": "#EDF5F8", "surface": "#FFFFFF", "sidebar": "#DDECF2", "text": "#123044", "muted": "#557386", "accent": "#087E9B", "border": "#C9DEE7", "plotly": "plotly_white"},
+}
+
 with st.sidebar:
+    st.header("Appearance")
+    selected_theme = st.selectbox(
+        "Dashboard theme", list(theme_palettes), index=0,
+        help="Choose a colour theme for the dashboard. Your selection applies immediately.",
+    )
+    st.caption("Change the visual style without changing the underlying data.")
+    st.divider()
     st.header("Filters")
     selected_type = st.selectbox(
         "Population category",
@@ -52,6 +65,46 @@ with st.sidebar:
         ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data"],
         help="Compare country totals across all available hosting countries.",
     )
+
+palette = theme_palettes[selected_theme]
+pio.templates.default = palette["plotly"]
+st.markdown(
+    f"""
+    <style>
+    :root {{
+      --dash-page:{palette["page"]}; --dash-surface:{palette["surface"]};
+      --dash-sidebar:{palette["sidebar"]}; --dash-text:{palette["text"]};
+      --dash-muted:{palette["muted"]}; --dash-accent:{palette["accent"]};
+      --dash-border:{palette["border"]};
+    }}
+    .stApp,[data-testid="stAppViewContainer"]{{background:var(--dash-page);color:var(--dash-text)}}
+    [data-testid="stHeader"]{{background:transparent}}
+    [data-testid="stSidebar"]>div:first-child{{background:var(--dash-sidebar);border-right:1px solid var(--dash-border)}}
+    [data-testid="stSidebar"] *{{color:var(--dash-text)}}
+    .block-container{{max-width:1480px;padding-top:1.6rem;padding-bottom:3rem}}
+    [data-testid="stMarkdownContainer"],[data-testid="stText"],.stMarkdown,p,label,h1,h2,h3,h4{{color:var(--dash-text)}}
+    [data-testid="stCaptionContainer"],small{{color:var(--dash-muted)!important}}
+    [data-testid="stMetric"]{{background:var(--dash-surface);border:1px solid var(--dash-border);border-radius:14px;padding:16px 18px;box-shadow:0 3px 14px rgba(15,23,42,.045)}}
+    [data-testid="stMetricLabel"] p{{color:var(--dash-muted)!important;font-weight:600}}
+    [data-testid="stMetricValue"]{{color:var(--dash-text);font-weight:750}}
+    [data-testid="stExpander"],[data-testid="stDataFrame"],[data-testid="stTable"]{{border-color:var(--dash-border);border-radius:12px}}
+    div[data-baseweb="select"]>div,div[data-baseweb="input"]>div,.stTextInput input{{background:var(--dash-surface);border-color:var(--dash-border);color:var(--dash-text);border-radius:10px}}
+    .stButton>button,.stDownloadButton>button,.stLinkButton>a{{border-radius:10px;border:1px solid var(--dash-accent);color:var(--dash-accent);font-weight:650;transition:all 140ms ease}}
+    .stButton>button:hover,.stDownloadButton>button:hover,.stLinkButton>a:hover{{background:var(--dash-accent);color:white;border-color:var(--dash-accent)}}
+    hr{{border-color:var(--dash-border)}} [data-testid="stAlert"]{{border-radius:12px}}
+    .dashboard-hero{{background:linear-gradient(120deg,var(--dash-surface),var(--dash-sidebar));border:1px solid var(--dash-border);border-left:5px solid var(--dash-accent);border-radius:18px;padding:22px 26px;margin:0 0 22px;box-shadow:0 5px 20px rgba(15,23,42,.045)}}
+    .dashboard-hero h1{{margin:0 0 7px;font-size:clamp(1.55rem,2.8vw,2.25rem);line-height:1.2;color:var(--dash-text);letter-spacing:-.035em}}
+    .dashboard-hero p{{margin:0;color:var(--dash-muted);font-size:.98rem}}
+    .theme-chip{{display:inline-block;margin-top:14px;padding:5px 10px;border-radius:999px;background:var(--dash-sidebar);border:1px solid var(--dash-border);color:var(--dash-accent);font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}}
+    </style>
+    <section class="dashboard-hero">
+      <h1>🌍 Global Refugee &amp; Displacement Intelligence</h1>
+      <p>Explore official displacement statistics, country profiles and humanitarian trends.</p>
+      <span class="theme-chip">{selected_theme} theme</span>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.spinner("Retrieving the latest UNHCR reporting period for the selected population category..."):
     try:
