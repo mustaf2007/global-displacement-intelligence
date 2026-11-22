@@ -9,7 +9,7 @@ import requests
 API_URL = "https://api-data.unhcr.org/api/v0/data/PopStatsOfficial"
 CONSTRAINTS_URL = "https://api-data.unhcr.org/api/v0/constraints/PopStatsOfficial"
 REQUIRED_FIELDS = {"time_period", "pop_type", "obs_value"}
-POPULATION_TYPES = ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "STA"]
+POPULATION_TYPES = ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP_UNHCR", "IDP_IDMC", "RET", "RDP", "NAT", "RASP", "STA"]
 
 
 def main() -> int:
