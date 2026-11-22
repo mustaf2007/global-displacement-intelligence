@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend
 
 
 class FetchAllTests(unittest.TestCase):
@@ -27,6 +27,10 @@ class FetchAllTests(unittest.TestCase):
         self.assertIn("IDP_UNHCR", population_types())
         self.assertIn("IDP_IDMC", population_types())
         self.assertNotIn("IDP", population_types())
+        self.assertIn("RET", population_types())
+        self.assertIn("RDP", population_types())
+        self.assertIn("NAT", population_types())
+        self.assertIn("RASP", population_types())
 
 
 class PopulationAggregationTests(unittest.TestCase):
@@ -92,6 +96,24 @@ class CountryPeriodChangeTests(unittest.TestCase):
         ])
         result = country_period_changes(frame, "REF_UNHCR", "ref_area_adm0", "2024-06", "2025-06")
         self.assertTrue(result.empty)
+
+
+class PopulationMeasureTests(unittest.TestCase):
+    def test_unhcr_solution_categories_are_flows(self):
+        for code in ("RET", "RDP", "NAT", "RASP"):
+            self.assertEqual(population_measure_type(code), "flow")
+        self.assertEqual(population_measure_type("REF_UNHCR"), "stock")
+        self.assertEqual(population_measure_type("IDP_IDMC"), "stock")
+
+    def test_explicit_total_trend_never_sums_country_records(self):
+        frame = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2025-06", "ref_area_adm0": "_T", "area_ori_adm0": "_T", "obs_value": 200},
+            {"pop_type": "REF_UNHCR", "time_period": "2025-06", "ref_area_adm0": "AAA", "area_ori_adm0": "_T", "obs_value": 100},
+            {"pop_type": "REF_UNHCR", "time_period": "2026-06", "ref_area_adm0": "AAA", "area_ori_adm0": "_T", "obs_value": 120},
+        ])
+        result = explicit_total_trend(frame, "REF_UNHCR")
+        self.assertEqual(result["time_period"].tolist(), ["2025-06"])
+        self.assertEqual(result["population"].tolist(), [200])
 
 if __name__ == "__main__":
     unittest.main()
