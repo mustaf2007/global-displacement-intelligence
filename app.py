@@ -37,7 +37,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -77,6 +77,54 @@ ranking = country_ranking(
     df, selected_type, geo, selected_period,
     limit=200 if analysis_view == "Global hosting comparison" else 20,
 )
+
+if analysis_view == "Global hosting map":
+    st.header("Global refugee hosting map")
+    st.caption(
+        f"Geographical distribution for {selected_period} · "
+        f"{type_labels.get(selected_type, selected_type)}"
+    )
+    if ranking.empty:
+        st.warning("No unambiguous country totals are available for this selection.")
+    else:
+        map_fig = px.choropleth(
+            ranking,
+            locations="country",
+            locationmode="country names",
+            color="population",
+            hover_name="country",
+            hover_data={"population": ":,", "country": False},
+            color_continuous_scale="Blues",
+            labels={"population": "People"},
+            title="Reported refugee population by hosting country",
+        )
+        map_fig.update_geos(
+            showframe=False,
+            showcoastlines=True,
+            projection_type="natural earth",
+        )
+        map_fig.update_layout(
+            height=650,
+            margin={"r": 0, "t": 55, "l": 0, "b": 0},
+        )
+        st.plotly_chart(map_fig, use_container_width=True)
+        st.subheader("Country totals")
+        st.dataframe(ranking, hide_index=True, use_container_width=True)
+        map_export = ranking.copy()
+        map_export.insert(0, "reporting_period", selected_period)
+        map_export.insert(0, "population_category", selected_type)
+        st.download_button(
+            "Download map data (CSV)",
+            data=map_export.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"global_hosting_map_{selected_type}_{selected_period}.csv",
+            mime="text/csv",
+        )
+    st.info(
+        "The map visualizes country-level reported totals. Some UNHCR country labels "
+        "may not match Plotly's geographic name catalogue and may not appear on the map. "
+        "The accompanying table retains the full country ranking."
+    )
+    st.stop()
 
 if analysis_view == "Global hosting comparison":
     st.header("Global hosting countries comparison")
