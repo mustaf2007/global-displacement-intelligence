@@ -39,7 +39,7 @@ class ETTSourceRegisterTests(unittest.TestCase):
 
     def test_known_funding_related_coverage_reductions_are_explicit(self):
         by_id = {row["record_id"]: row for row in self.records}
-        for week_id in ("ett_2026_week13", "ett_2026_week16"):
+        for week_id in ("ett_2026_week13", "ett_2026_week14", "ett_2026_week16"):
             self.assertEqual(by_id[week_id]["coverage_districts"], 5)
             self.assertIn("limited funding", by_id[week_id]["notes"].lower())
             self.assertEqual(by_id[week_id]["coverage_districts_basis"], "week_specific_report_note")
