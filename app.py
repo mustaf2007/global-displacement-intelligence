@@ -48,7 +48,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends", "Displacement pressure signals"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -214,6 +214,72 @@ if analysis_view == "Global displacement trends":
         "Only explicit, unambiguous total rows are plotted. If the source does not supply a total, "
         "the dashboard leaves the period out rather than summing country values. For flow categories, "
         "each point is a period-specific flow; the chart is not a cumulative total."
+    )
+    st.stop()
+
+
+if analysis_view == "Displacement pressure signals":
+    st.header("Country displacement pressure signals")
+    st.caption(
+        "A descriptive screening view of recent country-level population-stock changes. "
+        "It is not a predictive risk score and does not identify causes."
+    )
+    measure = population_measure_type(selected_type)
+    if measure != "stock":
+        st.warning("This analysis is limited to population stocks. Select a stock category; flow categories are not suitable for this comparison.")
+        st.stop()
+    if role == "Countries of origin":
+        st.warning("This first release is limited to country-of-asylum / hosting totals to keep the geographic definition consistent.")
+        st.stop()
+
+    signals = country_pressure_signals(df, selected_type, "ref_area_adm0")
+    if signals.empty:
+        st.warning("Insufficient comparable observations were available, or duplicate country-period keys prevented a safe comparison.")
+        st.stop()
+
+    positive = signals[signals["absolute_change"] > 0]
+    negative = signals[signals["absolute_change"] < 0]
+    p1, p2, p3 = st.columns(3)
+    p1.metric("Countries compared", f"{len(signals):,}")
+    p2.metric("Countries with increases", f"{len(positive):,}")
+    p3.metric("Countries with decreases", f"{len(negative):,}")
+    st.caption(
+        f"{selected_type} · Hosting-country totals · "
+        f"{signals['previous_period'].iloc[0]} to {signals['latest_period'].iloc[0]}"
+    )
+
+    st.subheader("Largest absolute increases")
+    if positive.empty:
+        st.info("No increases were observed among comparable countries.")
+    else:
+        chart = px.bar(
+            positive.head(15).sort_values("absolute_change"),
+            x="absolute_change", y="country", orientation="h",
+            labels={"absolute_change": "Change in people", "country": "Hosting country"},
+        )
+        st.plotly_chart(chart, use_container_width=True)
+
+    st.subheader("Countries increasing across four observed periods")
+    persistent = signals[signals["increasing_across_four_observed_periods"].eq(True)]
+    st.caption("A country is flagged only when it has a non-missing observation in each of the latest four reporting periods and its value rises at every successive observed period. The periods are not assumed to be equally spaced.")
+    if persistent.empty:
+        st.info("No countries met this descriptive persistence condition, or four comparable periods were unavailable.")
+    else:
+        st.dataframe(persistent, hide_index=True, use_container_width=True)
+
+    st.subheader("All comparable countries")
+    st.dataframe(signals, hide_index=True, use_container_width=True)
+    st.download_button(
+        "Download displacement pressure signals (CSV)",
+        data=signals.to_csv(index=False).encode("utf-8-sig"),
+        file_name=f"displacement_pressure_{selected_type}.csv",
+        mime="text/csv",
+    )
+    st.info(
+        "Method: compares only countries with valid observations in both latest shared reporting periods. "
+        "Persistence requires four observed periods with strictly increasing values. Missing values are not zero; "
+        "categories are not combined. These signals are descriptive and must not be interpreted as causal findings, "
+        "future displacement forecasts, or a validated risk classification."
     )
     st.stop()
 
