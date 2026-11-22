@@ -106,7 +106,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-with st.spinner("Retrieving the latest UNHCR reporting period for the selected population category..."):
+with st.spinner("Retrieving UNHCR population history from 1960 onward..."):
     try:
         df = load_population_data(selected_type)
     except UNHCRDataError as exc:
@@ -136,7 +136,7 @@ a.metric("Explicit global total", f"{global_total:,.0f}" if global_total is not 
 b.metric("Selected period", selected_period)
 c.metric("Records retrieved", f"{len(df):,}")
 
-st.caption(f"Latest reporting period in the retrieved slice: {latest_period(df) or 'Unknown'}")
+st.caption(f"Historical coverage loaded from 1960 onward · Latest available reporting period: {latest_period(df) or 'Unknown'}")
 
 # Data quality diagnostics for the currently selected population category.
 quality = audit_population_data(df)
