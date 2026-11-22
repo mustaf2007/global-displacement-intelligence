@@ -14,7 +14,7 @@ An open-source Streamlit research dashboard for exploring official population st
 - Population-category, reporting-period and custom inclusive historical-range filters, including all periods returned from 1960 onward.
 - Country-of-asylum/hosting and country-of-origin rankings.
 - Historical country trends, reporting-period coverage and comparable-period change analysis.
-- Global displacement trends, decade-level summaries that treat stock and flow measures separately, and multi-country historical comparisons using explicit UNHCR total records only.
+- Global displacement trends, decade-level summaries that treat stock and flow measures separately, and multi-country historical comparisons, and country profiles across separately reported refugee, IDP, asylum-seeker and other population categories using explicit UNHCR total records only.
 - Descriptive displacement-pressure signals with strict missing-data and comparability rules.
 - Somalia hosting/origin profile and a subnational displacement data workspace.
 - Somalia IOM DTM Emergency Trend Tracking (ETT) Week 19 snapshot, with origin and destination marginal distributions, regional map, CSV exports and reconciliation checks.
