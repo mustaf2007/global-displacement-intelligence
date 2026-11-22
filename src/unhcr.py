@@ -204,3 +204,37 @@ def country_trend(pop_type: str, geo_code: str, geography: str) -> pd.DataFrame:
     data = data.dropna(subset=["obs_value"])
     data = data[~data["time_period"].duplicated(keep=False)]
     return data[["time_period", "obs_value"]].rename(columns={"obs_value": "population"}).sort_values("time_period").reset_index(drop=True)
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def population_period_coverage(pop_type: str) -> pd.DataFrame:
+    """
+    Retrieve the full available reporting-period history for one population type.
+    Uses only population type and period dimensions to keep the response compact.
+    """
+    params = {
+        "c[pop_type]": pop_type,
+        "dimensions": "pop_type,time_period",
+        "sort": "time_period:asc",
+    }
+    data = _fetch_all(params)
+    required = {"pop_type", "time_period"}
+    missing = required.difference(data.columns)
+    if missing:
+        raise UNHCRDataError(
+            "UNHCR period-coverage response is missing fields: " + ", ".join(sorted(missing))
+        )
+    data = data[data["pop_type"].astype("string").eq(pop_type)].copy()
+    data["time_period"] = data["time_period"].astype("string")
+    data = data.dropna(subset=["time_period"])
+    if data.empty:
+        return pd.DataFrame(columns=["time_period", "record_count"])
+    coverage = (
+        data.groupby("time_period", dropna=False)
+        .size()
+        .rename("record_count")
+        .reset_index()
+        .sort_values("time_period")
+        .reset_index(drop=True)
+    )
+    return coverage
