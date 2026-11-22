@@ -25,7 +25,7 @@ class ETTSourceRegisterTests(unittest.TestCase):
         }
         for row in self.records:
             for field in ("record_id", "title", "source_url", "source_type",
-                          "period_start", "period_end", "extraction_status", "notes"):
+                          "period_start", "period_end", "extraction_status", "notes", "catalogue_url"):
                 self.assertTrue(row.get(field), f"Missing {field}: {row}")
             self.assertIn(row["extraction_status"], statuses)
             self.assertLessEqual(row["period_start"], row["period_end"])
