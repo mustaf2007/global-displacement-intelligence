@@ -172,3 +172,9 @@ The public DTM dataset page identifies the June–November 2026 ETT round, its o
 ### Schema-first ETT dataset inspection
 
 `src/ett_dataset_ingest.py` provides a raw-row inspection step for the downloadable location-level ETT dataset. It profiles column names, null counts, distinct values, observed Python types and exact duplicate rows. It does not infer indicator meanings, units, reporting dates, geography levels or totals from column names. Normalization is intentionally blocked until a reviewed field mapping and indicator/unit/aggregation specification are available. This prevents accidental conversion of location-level records into regional or national arrival totals.
+
+
+
+### Somalia ETT Week 19 needs and response
+
+The Week 19 report's needs and response tables are transcribed in `src/ett_needs.py` and displayed separately from new-arrival flow counts. The new-arrival sector table reports the share of assessed settlements where a need or response was reported; it is not the share of displaced individuals. A second table records the main needs of IDPs in assessed locations, which can describe people who arrived at any time. These measures are not combined. Text categories such as `<1%` and `Not reported` are preserved as text and are never recoded to zero. The transcription has automated structural and range checks, but those checks do not independently authenticate the source. The direct Week 19 report PDF is linked in the dashboard.
