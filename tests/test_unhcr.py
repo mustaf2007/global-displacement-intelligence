@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage
 
 
 class FetchAllTests(unittest.TestCase):
@@ -48,6 +48,27 @@ class PopulationAggregationTests(unittest.TestCase):
         self.assertEqual(explicit_global_total(self.frame, "REF_UNHCR", "2026-06"), 200)
         self.assertIsNone(explicit_global_total(self.frame, "ASY", "2026-06"))
 
+
+
+class HistoricalCoverageTests(unittest.TestCase):
+    @patch("src.unhcr._fetch_all")
+    def test_groups_observations_by_available_reporting_period(self, fetch_all):
+        fetch_all.return_value = pd.DataFrame([
+            {"pop_type": "REF_UNHCR", "time_period": "2024-06"},
+            {"pop_type": "REF_UNHCR", "time_period": "2024-06"},
+            {"pop_type": "REF_UNHCR", "time_period": "2025-06"},
+            {"pop_type": "ASY", "time_period": "2025-06"},
+        ])
+        result = population_period_coverage("REF_UNHCR")
+        self.assertEqual(result["time_period"].tolist(), ["2024-06", "2025-06"])
+        self.assertEqual(result["record_count"].tolist(), [2, 1])
+        self.assertEqual(fetch_all.call_args.args[0]["dimensions"], "pop_type,time_period")
+
+    @patch("src.unhcr._fetch_all")
+    def test_returns_empty_coverage_when_no_records(self, fetch_all):
+        fetch_all.return_value = pd.DataFrame(columns=["pop_type", "time_period"])
+        result = population_period_coverage("STA")
+        self.assertTrue(result.empty)
 
 if __name__ == "__main__":
     unittest.main()
