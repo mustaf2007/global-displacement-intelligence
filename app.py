@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
@@ -588,6 +589,40 @@ if analysis_view == "Somalia subnational data":
     m2.metric("Cumulative arrivals since June", f"{ett_week19['cumulative_arrivals']:,}")
     m3.metric("Districts assessed", f"{ett_week19['districts_assessed']:,}")
     st.caption("These are new-arrival flow measures, not the total number of IDPs currently living in Somalia.")
+
+    with st.expander("Week 19 data validation and provenance", expanded=False):
+        st.caption(
+            "Automated checks assess internal arithmetic and structural consistency of the "
+            "transcribed snapshot. They do not independently authenticate the report or "
+            "establish nationwide coverage."
+        )
+        validation_rows = [
+            {"Validation check": name.replace("_", " ").capitalize(), "Result": "Passed" if passed else "Failed"}
+            for name, passed in ett_validation["checks"].items()
+        ]
+        st.dataframe(pd.DataFrame(validation_rows), hide_index=True, use_container_width=True)
+        if ett_validation["passed"]:
+            st.success("All snapshot consistency checks passed.")
+        else:
+            st.error("One or more snapshot checks failed. Treat the displayed regional breakdowns with caution.")
+        st.markdown(f"**Source:** [IOM DTM Week 19 report]({ett_week19['source_url']})")
+        st.caption(
+            f"Reporting period: {ett_week19['period']} · Cumulative tracking start: "
+            f"{ett_week19['cumulative_start']} · Data status: manually transcribed static snapshot"
+        )
+        audit_export = {
+            "source": ett_week19["source"],
+            "source_url": ett_week19["source_url"],
+            "period": ett_week19["period"],
+            "validation": ett_validation,
+            "snapshot": ett_week19,
+        }
+        st.download_button(
+            "Download Week 19 snapshot and validation (JSON)",
+            data=json.dumps(audit_export, ensure_ascii=False, indent=2),
+            file_name="somalia_iom_ett_week19_validated_snapshot.json",
+            mime="application/json",
+        )
 
     with st.expander("ETT reporting coverage and historical context"):
         coverage_phases = pd.DataFrame({
