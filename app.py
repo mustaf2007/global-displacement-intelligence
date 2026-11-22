@@ -15,6 +15,8 @@ from src.unhcr import (
     population_types,
     population_period_coverage,
     country_period_changes,
+    population_measure_type,
+    explicit_total_trend,
 )
 
 st.set_page_config(page_title="Global Refugee & Displacement Intelligence", page_icon="🌍", layout="wide")
@@ -28,6 +30,10 @@ type_labels = {
     "OIP": "Other people in need of international protection",
     "IDP_UNHCR": "Internally displaced people protected/assisted by UNHCR",
     "IDP_IDMC": "Internally displaced people (IDMC data)",
+    "RET": "Refugee returnees",
+    "RDP": "IDP returnees",
+    "NAT": "Naturalized refugees",
+    "RASP": "Resettlement arrivals and sponsorship pathways",
     "STA": "Stateless people",
 }
 
@@ -42,7 +48,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -161,6 +167,55 @@ ranking = country_ranking(
     df, selected_type, geo, selected_period,
     limit=200 if analysis_view in ("Global hosting comparison", "Global hosting map") else 20,
 )
+
+if analysis_view == "Global displacement trends":
+    st.header("Global displacement trends")
+    measure = population_measure_type(selected_type)
+    if measure == "stock":
+        st.info(
+            "This category is a **stock**: it measures people with the characteristic at a point in time. "
+            "Values across reporting periods must not be added together."
+        )
+    else:
+        st.info(
+            "This category is a **flow**: it measures people who acquired the characteristic during a period. "
+            "UNHCR identifies this category as part of its solutions-related flow statistics."
+        )
+    st.caption(
+        f"Selected series: {type_labels.get(selected_type, selected_type)} · "
+        f"Measure type: {measure.title()}"
+    )
+    trend_data = explicit_total_trend(df, selected_type)
+    if trend_data.empty:
+        st.warning(
+            "No unique explicit total rows are available across the retrieved reporting periods. "
+            "Country totals are not added to manufacture a global trend."
+        )
+    else:
+        st.metric("Periods with explicit totals", f"{len(trend_data):,}")
+        trend_fig = px.line(
+            trend_data, x="time_period", y="population", markers=True,
+            labels={"time_period": "Reporting period", "population": "People"},
+            title=f"Explicit UNHCR total — {type_labels.get(selected_type, selected_type)}",
+        )
+        trend_fig.update_layout(yaxis_tickformat=",", xaxis_tickangle=-45)
+        st.plotly_chart(trend_fig, use_container_width=True)
+        st.dataframe(trend_data, hide_index=True, use_container_width=True)
+        export = trend_data.copy()
+        export.insert(0, "measure_type", measure)
+        export.insert(0, "population_category", selected_type)
+        st.download_button(
+            "Download global trend data (CSV)",
+            data=export.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"global_trend_{selected_type}.csv",
+            mime="text/csv",
+        )
+    st.caption(
+        "Only explicit, unambiguous total rows are plotted. If the source does not supply a total, "
+        "the dashboard leaves the period out rather than summing country values. For flow categories, "
+        "each point is a period-specific flow; the chart is not a cumulative total."
+    )
+    st.stop()
 
 if analysis_view == "Historical change analysis":
     st.header("Historical country change analysis")
