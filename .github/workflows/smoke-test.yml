@@ -20,3 +20,5 @@ jobs:
           pip install -r requirements.txt
       - name: Compile Python files
         run: python -m compileall -q app.py src
+      - name: Run geographic mapping tests
+        run: python -m unittest discover -s tests -v
