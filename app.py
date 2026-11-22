@@ -338,7 +338,13 @@ if analysis_view == "Somalia subnational data":
         map_data = map_data[
             map_data["Boundary region"].str.casefold().isin(boundary_names)
         ].copy()
-        if len(map_data) != len(destinations):
+        matched_count = len(map_data)
+        match_col, total_col = st.columns(2)
+        match_col.metric("Destination regions matched", f"{matched_count} / {len(destinations)}")
+        total_col.metric("Regions in boundary layer", f"{len(boundary_names):,}")
+        if matched_count == len(destinations):
+            st.success("All seven reported destination regions matched the administrative boundary layer.")
+        else:
             missing_matches = sorted(
                 set(destinations["Destination region"]) - set(map_data["Destination region"])
             )
