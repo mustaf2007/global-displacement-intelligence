@@ -9,6 +9,7 @@ from src.geo import country_iso3
 from src.quality import audit_population_data, reconciliation_by_period
 from src.somalia_ett import get_week19_snapshot, validate_week19_snapshot
 from src.ett_timeseries import build_ett_observations, validate_ett_observations
+from src.ett_trends import prepare_ett_trend, trend_readiness
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -644,6 +645,38 @@ if analysis_view == "Somalia subnational data":
             file_name="somalia_iom_ett_week19_normalized_observations.csv",
             mime="text/csv",
         )
+        st.markdown("**Verified weekly trend readiness**")
+        try:
+            with open("data/somalia_ett_observations.json", encoding="utf-8") as registry_file:
+                registry_observations = json.load(registry_file)
+            weekly_trend = prepare_ett_trend(
+                registry_observations,
+                indicator="new_arrivals",
+                measure_type="flow",
+                geography_type="national",
+                geography="Somalia",
+            )
+            readiness = trend_readiness(weekly_trend)
+            if readiness["ready"]:
+                st.plotly_chart(
+                    px.line(
+                        weekly_trend,
+                        x="period_start",
+                        y="value",
+                        markers=True,
+                        title="Verified weekly new arrivals — Somalia",
+                        labels={"period_start": "Reporting period start", "value": "New arrivals"},
+                    ),
+                    use_container_width=True,
+                )
+            else:
+                st.info(
+                    f"Historical weekly trend is not displayed yet: {readiness['period_count']} "
+                    "verified reporting period is available; at least two distinct periods "
+                    "with the same measure are required."
+                )
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            st.warning(f"Verified ETT trend registry could not be loaded: {exc}")
 
     with st.expander("ETT reporting coverage and historical context"):
         coverage_phases = pd.DataFrame({
