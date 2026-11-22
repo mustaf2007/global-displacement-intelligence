@@ -1,0 +1,90 @@
+[
+  {
+    "record_id": "ett_2026_week06",
+    "title": "Somalia — Emergency Trend Tracking Report — Week 06 (July 2026)",
+    "source_url": "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-06-july-2026",
+    "source_type": "weekly_report",
+    "period_start": "2026-07-19",
+    "period_end": "2026-07-22",
+    "coverage_districts": 5,
+    "extraction_status": "metadata_verified_values_not_extracted",
+    "notes": "Official DTM report page confirms period and five-district coverage; numerical observations not yet transcribed."
+  },
+  {
+    "record_id": "ett_2026_week12",
+    "title": "Somalia — Emergency Trend Tracking Report — Week 12 (August–September 2026)",
+    "source_url": "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-12-august-september-2026",
+    "source_type": "weekly_report",
+    "period_start": "2026-08-29",
+    "period_end": "2026-09-02",
+    "coverage_districts": 13,
+    "extraction_status": "metadata_verified_values_not_extracted",
+    "notes": "Official DTM report page confirms period and coverage context; numerical observations not yet transcribed."
+  },
+  {
+    "record_id": "ett_2026_week14",
+    "title": "Somalia — Emergency Trend Tracking Report — Week 14 (September 2026)",
+    "source_url": "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-14-september-2026",
+    "source_type": "weekly_report",
+    "period_start": "2026-09-13",
+    "period_end": "2026-09-16",
+    "coverage_districts": 5,
+    "extraction_status": "metadata_verified_values_not_extracted",
+    "notes": "Official DTM page notes reduced assessment to five districts for this week; numerical observations not yet transcribed."
+  },
+  {
+    "record_id": "ett_2026_week19",
+    "title": "Somalia — Emergency Trend Tracking Report — Week 19",
+    "source_url": "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-19-31-october-04-november-2026",
+    "source_type": "weekly_report",
+    "period_start": "2026-10-31",
+    "period_end": "2026-11-04",
+    "coverage_districts": 16,
+    "extraction_status": "verified_observations_in_registry",
+    "notes": "23 normalized observations are included in data/somalia_ett_observations.json."
+  },
+  {
+    "record_id": "ett_2026_week20",
+    "title": "Somalia — Emergency Trend Tracking Report — Week 20",
+    "source_url": "https://humara.org/report/2552b18b-af4f-490f-805c-a005a3b012ba",
+    "source_type": "weekly_report",
+    "period_start": "2026-11-07",
+    "period_end": "2026-11-11",
+    "coverage_districts": 16,
+    "extraction_status": "metadata_verified_values_not_extracted",
+    "notes": "Report listing identifies Week 20; numerical observations have not yet been independently transcribed."
+  },
+  {
+    "record_id": "ett_2026_q2",
+    "title": "Somalia — Emergency Trend Tracking: Quarterly Overview — Q2 2026",
+    "source_url": "https://dtm.iom.int/sites/g/files/tmzbdl1461/files/reports/DTM_SOM_ETT_Q2_2026_2.pdf?iframe=true",
+    "source_type": "quarterly_overview",
+    "period_start": "2026-04-18",
+    "period_end": "2026-06-30",
+    "coverage_districts": 5,
+    "extraction_status": "metadata_verified_aggregate_values_not_in_weekly_registry",
+    "notes": "Aggregate overview spans the tail of the previous ETT round and the first weeks of the new June 2026 series; do not merge with weekly observations."
+  },
+  {
+    "record_id": "ett_2026_q3",
+    "title": "Somalia — Emergency Trend Tracking: Quarterly Overview — Q3 2026",
+    "source_url": "https://humara.org/report/77fded4c-873d-461a-b8b9-70c86859a313",
+    "source_type": "quarterly_overview",
+    "period_start": "2026-07-01",
+    "period_end": "2026-09-30",
+    "coverage_districts": 13,
+    "extraction_status": "metadata_verified_aggregate_values_not_in_weekly_registry",
+    "notes": "Quarterly aggregate; do not treat as a single weekly period or merge with weekly counts."
+  },
+  {
+    "record_id": "ett_2026_dataset",
+    "title": "Somalia — Emergency Trend Tracking Dataset (since June 2026)",
+    "source_url": "https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0",
+    "source_type": "public_dataset",
+    "period_start": "2026-06-14",
+    "period_end": "2026-11-11",
+    "coverage_districts": null,
+    "extraction_status": "source_catalogued_dataset_file_not_imported",
+    "notes": "Official public dataset page; downloadable source file has not yet been ingested into the application."
+  }
+]
