@@ -1040,6 +1040,58 @@ if analysis_view == "Somalia displacement profile":
                 mime="text/csv",
             )
 
+    st.divider()
+    st.subheader("Somalia — IOM DTM emergency displacement snapshot")
+    st.caption("A complementary operational indicator, presented separately from UNHCR's population-statistics series.")
+    st.markdown("**IOM DTM Emergency Trend Tracking · Week 19 · 31 October–4 November 2026**")
+    iom1, iom2, iom3 = st.columns(3)
+    iom1.metric("New arrivals during the week", "10,451")
+    iom2.metric("Cumulative arrivals since 14 June", "114,553")
+    iom3.metric("Districts assessed", "16")
+    st.caption(
+        "These are reported arrival flows from a partial monitoring footprint, not the number of IDPs "
+        "currently living in Somalia. Week 20 was published for 7–11 November 2026, but its numerical "
+        "figures have not been independently extracted and validated for this dashboard."
+    )
+    cause_data = pd.DataFrame({
+        "Reported reason": ["Conflict", "Floods", "Drought", "Evictions"],
+        "Share of reported arrivals (%)": [44, 31, 20, 5],
+    })
+    cause_col, source_col = st.columns([1.25, 1])
+    with cause_col:
+        st.markdown("**Reported reasons for displacement — Week 19**")
+        cause_fig = px.bar(
+            cause_data.sort_values("Share of reported arrivals (%)"),
+            x="Share of reported arrivals (%)",
+            y="Reported reason",
+            orientation="h",
+            labels={"Share of reported arrivals (%)": "Share (%)"},
+            title="Reported reasons for new arrivals",
+        )
+        cause_fig.update_layout(xaxis_range=[0, 100])
+        st.plotly_chart(cause_fig, use_container_width=True)
+    with source_col:
+        st.markdown("**Source and coverage notes**")
+        st.write(
+            "IOM DTM's Emergency Trend Tracking uses key-informant reporting across assessed "
+            "locations. Coverage is partial and has changed over time; unassessed districts are "
+            "not zero-displacement areas."
+        )
+        st.link_button(
+            "IOM DTM Week 19 report",
+            "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-19-31-october-04-november-2026",
+        )
+        st.link_button(
+            "IOM DTM ETT dataset",
+            "https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0",
+        )
+    st.info(
+        "UNHCR and IOM indicators are intentionally not merged or added. UNHCR's selected series "
+        "is a population-statistics measure; IOM's ETT figures describe newly reported arrivals "
+        "within a defined monitoring period and geographic footprint. They have different "
+        "definitions, coverage and reference periods."
+    )
+
     st.warning(
         "Interpretation limits: this page reports only the selected UNHCR population category. "
         "It does not combine refugee, asylum-seeker, IDP, returnee or other categories into one "
