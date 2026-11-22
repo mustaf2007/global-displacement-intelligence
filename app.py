@@ -19,6 +19,7 @@ from src.unhcr import (
     country_period_changes,
     population_measure_type,
     explicit_total_trend,
+    decade_comparison,
     filter_reporting_periods,
 )
 
@@ -279,6 +280,33 @@ if analysis_view == "Global displacement trends":
         )
         trend_fig.update_layout(yaxis_tickformat=",", xaxis_tickangle=-45)
         st.plotly_chart(trend_fig, use_container_width=True)
+
+        st.subheader("Decade-level comparison")
+        decade_data = decade_comparison(df, selected_type)
+        if decade_data.empty:
+            st.info("There are not enough explicit global totals to prepare a decade comparison.")
+        else:
+            if measure == "stock":
+                st.caption("For each decade, this shows the last observed explicit global total. Stock values are not added across years.")
+                decade_title = "Last observed global stock by decade"
+            else:
+                st.caption("For each decade, this shows the mean of observed period-specific explicit flows. It is not a cumulative decade total; reporting periods may vary in length and frequency.")
+                decade_title = "Mean observed period-specific flow by decade"
+            decade_fig = px.bar(
+                decade_data, x="decade", y="population",
+                labels={"decade": "Decade", "population": "People"},
+                title=decade_title,
+                hover_data=["observed_periods", "summary_method"],
+            )
+            decade_fig.update_layout(yaxis_tickformat=",")
+            st.plotly_chart(decade_fig, use_container_width=True)
+            st.dataframe(decade_data, hide_index=True, use_container_width=True)
+            st.download_button(
+                "Download decade comparison (CSV)",
+                data=decade_data.to_csv(index=False).encode("utf-8-sig"),
+                file_name=f"decade_comparison_{selected_type}.csv",
+                mime="text/csv",
+            )
         st.dataframe(trend_data, hide_index=True, use_container_width=True)
         export = trend_data.copy()
         export.insert(0, "measure_type", measure)
