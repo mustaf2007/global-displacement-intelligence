@@ -305,3 +305,78 @@ def explicit_total_trend(frame: pd.DataFrame, pop_type: str) -> pd.DataFrame:
         if value is not None:
             rows.append({"time_period": period, "population": value})
     return pd.DataFrame(rows, columns=columns)
+
+
+def country_pressure_signals(
+    frame: pd.DataFrame,
+    pop_type: str,
+    geography: str = "ref_area_adm0",
+) -> pd.DataFrame:
+    """
+    Describe recent country-level stock changes using observed hosting totals only.
+    Persistence is assessed across the latest four shared reporting periods; no
+    missing observations are imputed and flow categories are rejected.
+    """
+    columns = [
+        "country_code", "country", "previous_period", "latest_period",
+        "previous_population", "latest_population", "absolute_change",
+        "percentage_change", "increasing_across_four_observed_periods",
+    ]
+    if population_measure_type(pop_type) != "stock":
+        return pd.DataFrame(columns=columns)
+    required = {"pop_type", "time_period", "obs_value", geography}
+    if not required.issubset(frame.columns) or geography not in ("ref_area_adm0", "area_ori_adm0"):
+        return pd.DataFrame(columns=columns)
+
+    opposite = "area_ori_adm0" if geography == "ref_area_adm0" else "ref_area_adm0"
+    data = frame[frame["pop_type"].astype("string").eq(pop_type)].copy()
+    data = data[data[geography].notna() & ~data[geography].astype("string").isin(["_T", "_X"])]
+    if opposite in data.columns:
+        data = data[data[opposite].astype("string").eq("_T")]
+    data["time_period"] = data["time_period"].astype("string")
+    data["obs_value"] = pd.to_numeric(data["obs_value"], errors="coerce")
+    data = data.dropna(subset=["time_period", "obs_value"])
+    keys = [geography, "time_period"]
+    if data.empty or data.duplicated(keys, keep=False).any():
+        return pd.DataFrame(columns=columns)
+
+    periods = sorted(data["time_period"].unique())
+    if len(periods) < 2:
+        return pd.DataFrame(columns=columns)
+    recent_periods = periods[-4:]
+    pivot = data.pivot(index=geography, columns="time_period", values="obs_value")
+    latest_two = periods[-2:]
+    pivot = pivot.dropna(subset=latest_two)
+    if pivot.empty:
+        return pd.DataFrame(columns=columns)
+
+    label_col = geography + "_label"
+    name_col = label_col if label_col in data.columns else geography
+    names = data.drop_duplicates(geography).set_index(geography)[name_col]
+    result = pd.DataFrame({
+        "country_code": pivot.index.astype(str),
+        "country": names.reindex(pivot.index).astype(str).values,
+        "previous_period": latest_two[0],
+        "latest_period": latest_two[1],
+        "previous_population": pivot[latest_two[0]].values,
+        "latest_population": pivot[latest_two[1]].values,
+    })
+    result["absolute_change"] = result["latest_population"] - result["previous_population"]
+    result["percentage_change"] = result.apply(
+        lambda row: row["absolute_change"] / row["previous_population"] * 100
+        if row["previous_population"] != 0 else pd.NA,
+        axis=1,
+    )
+
+    if len(recent_periods) == 4:
+        complete = pivot.reindex(columns=recent_periods).dropna()
+        persistent_codes = set(
+            complete.index[
+                (complete[recent_periods].diff(axis=1).iloc[:, 1:] > 0).all(axis=1)
+            ].astype(str)
+        )
+        result["increasing_across_four_observed_periods"] = result["country_code"].isin(persistent_codes)
+    else:
+        result["increasing_across_four_observed_periods"] = pd.NA
+
+    return result[columns].sort_values("absolute_change", ascending=False).reset_index(drop=True)
