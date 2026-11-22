@@ -244,8 +244,44 @@ if analysis_view == "Somalia subnational data":
         "https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0",
     )
     st.link_button(
+        "Open latest Week 19 report (31 Oct – 4 Nov 2026)",
+        "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-19-31-october-04-november-2026",
+    )
+    st.link_button(
         "Open Somalia DTM country page and latest reports",
         "https://dtm.iom.int/somalia",
+    )
+
+    st.markdown("**Latest verified ETT figures — Week 19**")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("New arrivals this week", "10,451")
+    m2.metric("Cumulative arrivals since June", "114,553")
+    m3.metric("Districts assessed", "16")
+    st.caption("These are new-arrival flow measures, not the total number of IDPs currently living in Somalia.")
+
+    causes = pd.DataFrame({
+        "Reason": ["Conflict", "Floods", "Drought", "Evictions", "Other / unspecified"],
+        "Share (%)": [44, 31, 20, 5, 0],
+    })
+    st.plotly_chart(
+        px.bar(causes, x="Reason", y="Share (%)", title="Reported reasons for new displacement — Week 19"),
+        use_container_width=True,
+    )
+    destinations = pd.DataFrame({
+        "Destination region": ["Gedo", "Bay", "Banadir", "Middle Shabelle", "Hiraan", "Lower Juba", "Lower Shabelle"],
+        "New arrivals": [2188, 1985, 1929, 1883, 1041, 769, 656],
+    }).sort_values("New arrivals", ascending=False)
+    st.markdown("**Reported destination regions — Week 19**")
+    st.dataframe(destinations, hide_index=True, use_container_width=True)
+    st.caption(
+        "The published report gives destination-region counts. These are not district totals. "
+        "Do not infer district-level values from regional counts."
+    )
+    st.download_button(
+        "Download Week 19 destination data (CSV)",
+        data=destinations.to_csv(index=False).encode("utf-8-sig"),
+        file_name="somalia_ett_week19_destination_regions.csv",
+        mime="text/csv",
     )
 
     st.divider()
