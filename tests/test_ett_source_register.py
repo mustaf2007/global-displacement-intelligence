@@ -38,12 +38,12 @@ class ETTSourceRegisterTests(unittest.TestCase):
         self.assertEqual(dataset["data_through"], "2026-11-11")
         self.assertEqual(dataset["extraction_status"], "source_catalogued_dataset_file_not_imported")
 
-    def test_only_week19_is_marked_as_weekly_observations_loaded(self):
+    def test_week19_and_week20_are_marked_as_weekly_observations_loaded(self):
         loaded = [
             row["record_id"] for row in self.records
             if row["extraction_status"] == "verified_observations_in_registry"
         ]
-        self.assertEqual(loaded, ["ett_2026_week19"])
+        self.assertEqual(loaded, ["ett_2026_week19", "ett_2026_week20"])
 
     def test_known_funding_related_coverage_reductions_are_explicit(self):
         by_id = {row["record_id"]: row for row in self.records}
