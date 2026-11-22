@@ -580,7 +580,7 @@ if analysis_view == "Somalia subnational data":
         "https://humara.org/report/2552b18b-af4f-490f-805c-a005a3b012ba",
     )
     st.link_button(
-        "Open Week 19 report (31 Oct – 4 Nov 2026; latest verified figures)",
+        "Open Week 19 report (31 Oct – 4 Nov 2026; historical reference)",
         "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-19-31-october-04-november-2026",
     )
     st.link_button(
@@ -651,9 +651,9 @@ if analysis_view == "Somalia subnational data":
         )
         st.markdown("**Latest numerically verified ETT figures — Week 19**")
     m1, m2, m3 = st.columns(3)
-    m1.metric("New arrivals this week", f"{ett_week19['weekly_arrivals']:,}")
-    m2.metric("Cumulative arrivals since June", f"{ett_week19['cumulative_arrivals']:,}")
-    m3.metric("Districts assessed", f"{ett_week19['districts_assessed']:,}")
+    m1.metric("Week 19 new arrivals", f"{ett_week19['weekly_arrivals']:,}")
+    m2.metric("Week 19 cumulative arrivals since 14 June", f"{ett_week19['cumulative_arrivals']:,}")
+    m3.metric("Week 19 districts assessed", f"{ett_week19['districts_assessed']:,}")
     st.caption("These are new-arrival flow measures, not the total number of IDPs currently living in Somalia.")
 
     with st.expander("Week 19 data validation and provenance", expanded=False):
