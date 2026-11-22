@@ -8,6 +8,7 @@ import streamlit as st
 from src.geo import country_iso3
 from src.quality import audit_population_data, reconciliation_by_period
 from src.somalia_ett import get_week19_snapshot, validate_week19_snapshot
+from src.ett_timeseries import build_ett_observations, validate_ett_observations
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -622,6 +623,26 @@ if analysis_view == "Somalia subnational data":
             data=json.dumps(audit_export, ensure_ascii=False, indent=2),
             file_name="somalia_iom_ett_week19_validated_snapshot.json",
             mime="application/json",
+        )
+        observations = build_ett_observations(ett_week19)
+        series_validation = validate_ett_observations(observations)
+        st.markdown("**Normalized observation table**")
+        st.caption(
+            "Long-format records preserve the reporting period, indicator, measure type, "
+            "geographic dimension, value, unit and source. This is one verified reporting "
+            "period, not yet a historical weekly series."
+        )
+        observation_frame = pd.DataFrame(observations)
+        st.dataframe(observation_frame, hide_index=True, use_container_width=True)
+        if series_validation["passed"]:
+            st.success(f"Normalized records passed validation: {series_validation['row_count']} observations.")
+        else:
+            st.error("Normalized observation validation failed. Review the source records before use.")
+        st.download_button(
+            "Download normalized ETT observations (CSV)",
+            data=observation_frame.to_csv(index=False).encode("utf-8-sig"),
+            file_name="somalia_iom_ett_week19_normalized_observations.csv",
+            mime="text/csv",
         )
 
     with st.expander("ETT reporting coverage and historical context"):
