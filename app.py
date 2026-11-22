@@ -494,6 +494,51 @@ if analysis_view == "Somalia subnational data":
             "Ethiopia is a reported cross-border origin."
         )
 
+    st.subheader("Origin and destination profile — Week 19")
+    origin_col, destination_col = st.columns(2)
+    origin_col.metric(
+        "Largest reported origin",
+        str(origins.iloc[0]["Origin"]),
+        f'{int(origins.iloc[0]["New arrivals"]):,} arrivals',
+    )
+    destination_col.metric(
+        "Largest reported destination",
+        str(destinations.iloc[0]["Destination region"]),
+        f'{int(destinations.iloc[0]["New arrivals"]):,} arrivals',
+    )
+    origin_chart = px.bar(
+        origins,
+        x="New arrivals",
+        y="Origin",
+        orientation="h",
+        title="Origin locations",
+    ).update_layout(
+        height=430,
+        yaxis={"categoryorder": "total ascending"},
+        xaxis={"range": [0, 4000], "title": "Reported arrivals"},
+        margin={"l": 8, "r": 8, "t": 50, "b": 8},
+    )
+    destination_chart = px.bar(
+        destinations,
+        x="New arrivals",
+        y="Destination region",
+        orientation="h",
+        title="Destination regions",
+    ).update_layout(
+        height=430,
+        yaxis={"categoryorder": "total ascending"},
+        xaxis={"range": [0, 4000], "title": "Reported arrivals"},
+        margin={"l": 8, "r": 8, "t": 50, "b": 8},
+    )
+    origin_col.plotly_chart(origin_chart, use_container_width=True)
+    destination_col.plotly_chart(destination_chart, use_container_width=True)
+    st.info(
+        "These are separate marginal distributions: the report provides counts by origin "
+        "and counts by destination, but the displayed tables do not identify individual "
+        "origin-to-destination routes. Do not infer bilateral flows, net migration, or "
+        "regional gains and losses by subtracting one table from the other."
+    )
+
     st.divider()
     st.subheader("Countrywide baseline assessment — Round 3 (2024)")
     st.markdown(
