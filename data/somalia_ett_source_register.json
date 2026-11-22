@@ -86,9 +86,9 @@
     "period_end": "2026-09-16",
     "coverage_districts": 5,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM page notes reduced assessment to five districts for this week; numerical observations not yet transcribed.",
+    "notes": "Official DTM Week 14 report page explicitly states that only five districts were assessed due to limited funding: Baidoa, Dayniile, Diinsoor, Doolow and Kahda. Numerical observations not yet transcribed.",
     "catalogue_url": "https://dtm.iom.int/somalia",
-    "coverage_districts_basis": "round_level_or_report_metadata"
+    "coverage_districts_basis": "week_specific_report_note"
   },
   {
     "record_id": "ett_2026_week15",
