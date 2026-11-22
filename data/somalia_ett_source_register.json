@@ -8,7 +8,8 @@
     "period_end": "2026-06-30",
     "coverage_districts": 5,
     "extraction_status": "metadata_verified_aggregate_values_not_in_weekly_registry",
-    "notes": "Aggregate overview spans the tail of the previous ETT round and the first weeks of the new June 2026 series; do not merge with weekly observations."
+    "notes": "Aggregate overview spans the tail of the previous ETT round and the first weeks of the new June 2026 series; do not merge with weekly observations.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_dataset",
@@ -19,7 +20,8 @@
     "period_end": "2026-11-11",
     "coverage_districts": null,
     "extraction_status": "source_catalogued_dataset_file_not_imported",
-    "notes": "Official public dataset page; downloadable source file has not yet been ingested into the application."
+    "notes": "Official public dataset page; downloadable source file has not yet been ingested into the application.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_q3",
@@ -30,7 +32,8 @@
     "period_end": "2026-09-30",
     "coverage_districts": 13,
     "extraction_status": "metadata_verified_aggregate_values_not_in_weekly_registry",
-    "notes": "Quarterly aggregate; do not treat as a single weekly period or merge with weekly counts."
+    "notes": "Quarterly aggregate; do not treat as a single weekly period or merge with weekly counts.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week06",
@@ -41,7 +44,8 @@
     "period_end": "2026-07-22",
     "coverage_districts": 5,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM report page confirms period and five-district coverage; numerical observations not yet transcribed."
+    "notes": "Official DTM report page confirms period and five-district coverage; numerical observations not yet transcribed.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week12",
@@ -52,7 +56,8 @@
     "period_end": "2026-09-02",
     "coverage_districts": 13,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM report page confirms period and coverage context; numerical observations not yet transcribed."
+    "notes": "Official DTM report page confirms period and coverage context; numerical observations not yet transcribed.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week14",
@@ -63,7 +68,8 @@
     "period_end": "2026-09-16",
     "coverage_districts": 5,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM page notes reduced assessment to five districts for this week; numerical observations not yet transcribed."
+    "notes": "Official DTM page notes reduced assessment to five districts for this week; numerical observations not yet transcribed.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week15",
@@ -74,7 +80,8 @@
     "period_end": "2026-09-23",
     "coverage_districts": 13,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM report page confirms period and 13-district round context; numerical observations not yet transcribed."
+    "notes": "Official DTM report page confirms period and 13-district round context; numerical observations not yet transcribed.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week16",
@@ -85,7 +92,8 @@
     "period_end": "2026-09-30",
     "coverage_districts": 13,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM Somalia listing identifies Week 16 and reporting window; numerical observations not yet transcribed."
+    "notes": "Official DTM Somalia listing identifies Week 16 and reporting window; numerical observations not yet transcribed.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week17",
@@ -96,7 +104,8 @@
     "period_end": "2026-10-21",
     "coverage_districts": 16,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM listing confirms Week 17 and the expanded 16-district monitoring round; numerical observations not yet transcribed."
+    "notes": "Official DTM listing confirms Week 17 and the expanded 16-district monitoring round; numerical observations not yet transcribed.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week18",
@@ -107,7 +116,8 @@
     "period_end": "2026-10-28",
     "coverage_districts": 16,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Official DTM report page confirms period and 16-district monitoring round; numerical observations not yet transcribed."
+    "notes": "Official DTM report page confirms period and 16-district monitoring round; numerical observations not yet transcribed.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week19",
@@ -118,7 +128,8 @@
     "period_end": "2026-11-04",
     "coverage_districts": 16,
     "extraction_status": "verified_observations_in_registry",
-    "notes": "23 normalized observations are included in data/somalia_ett_observations.json."
+    "notes": "Official DTM report page and report extraction support the 23 normalized observations currently held in the registry.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   },
   {
     "record_id": "ett_2026_week20",
@@ -129,6 +140,7 @@
     "period_end": "2026-11-11",
     "coverage_districts": 16,
     "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Report listing identifies Week 20; numerical observations have not yet been independently transcribed."
+    "notes": "Report listing confirms 07–11 November 2026 and 16 districts assessed. The indexed report page does not expose the numerical tables in machine-readable text; figures remain unextracted pending direct report-file review.",
+    "catalogue_url": "https://dtm.iom.int/somalia"
   }
 ]
