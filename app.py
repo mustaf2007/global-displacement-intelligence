@@ -10,6 +10,7 @@ from src.quality import audit_population_data, reconciliation_by_period
 from src.somalia_ett import get_week19_snapshot, validate_week19_snapshot
 from src.ett_timeseries import build_ett_observations, validate_ett_observations
 from src.ett_trends import prepare_ett_trend, trend_readiness
+from src.ett_analysis import regional_distribution, driver_distribution, distribution_summary
 from src.unhcr import (
     UNHCRDataError,
     country_ranking,
@@ -933,6 +934,52 @@ if analysis_view == "Somalia subnational data":
         },
     ])
     st.dataframe(consistency_checks, hide_index=True, use_container_width=True)
+
+    st.subheader("Regional concentration and displacement drivers")
+    analysis_observations = build_ett_observations(ett_week19)
+    origin_distribution = regional_distribution(analysis_observations, "origin_region")
+    destination_distribution = regional_distribution(analysis_observations, "destination_region")
+    driver_breakdown = driver_distribution(analysis_observations)
+    origin_summary = distribution_summary(origin_distribution)
+    destination_summary = distribution_summary(destination_distribution)
+    origin_col, destination_col = st.columns(2)
+    origin_col.metric(
+        "Largest reported origin",
+        origin_summary["top_region"],
+        f"{origin_summary['top_share_pct']:.1f}% of reported origins",
+    )
+    destination_col.metric(
+        "Largest reported destination",
+        destination_summary["top_region"],
+        f"{destination_summary['top_share_pct']:.1f}% of reported destinations",
+    )
+    st.caption(
+        "Concentration is calculated separately within each reported marginal distribution. "
+        "These summaries do not identify origin-to-destination routes or individual movements."
+    )
+    analysis_left, analysis_right = st.columns(2)
+    with analysis_left:
+        st.markdown("**Origin distribution**")
+        st.dataframe(origin_distribution, hide_index=True, use_container_width=True)
+    with analysis_right:
+        st.markdown("**Destination distribution**")
+        st.dataframe(destination_distribution, hide_index=True, use_container_width=True)
+    st.markdown("**Reported displacement drivers**")
+    st.dataframe(driver_breakdown, hide_index=True, use_container_width=True)
+    st.caption(
+        "Driver percentages reflect the four quantified Week 19 categories. Other hazards "
+        "and other reasons reported as '<1%' remain in the source note above and are not "
+        "converted to numeric zero or added to this table."
+    )
+    st.download_button(
+        "Download Week 19 analytical breakdown (Excel-compatible CSV)",
+        data=pd.concat([
+            origin_distribution.assign(dimension="origin"),
+            destination_distribution.assign(dimension="destination"),
+        ], ignore_index=True).to_csv(index=False).encode("utf-8-sig"),
+        file_name="somalia_ett_week19_regional_distribution_analysis.csv",
+        mime="text/csv",
+    )
     if consistency_checks["Result"].eq("Review").any():
         st.warning(
             "At least one arithmetic check does not match its reference. "
