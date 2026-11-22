@@ -253,7 +253,12 @@ if analysis_view == "Somalia subnational data":
         "https://dtm.iom.int/somalia",
     )
 
-    st.markdown("**Latest verified ETT figures — Week 19**")
+    st.markdown("**Latest numerically verified ETT figures — Week 19**")
+    st.info(
+        "IOM has published Week 20 (7–11 November 2026) for the same 16-district " 
+        "monitoring footprint. Its numerical figures have not yet been extracted " 
+        "and verified for this dashboard, so Week 19 remains the latest displayed snapshot."
+    )
     m1, m2, m3 = st.columns(3)
     m1.metric("New arrivals this week", "10,451")
     m2.metric("Cumulative arrivals since June", "114,553")
