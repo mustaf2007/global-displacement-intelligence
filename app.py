@@ -245,7 +245,11 @@ if analysis_view == "Somalia subnational data":
         "https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0",
     )
     st.link_button(
-        "Open latest Week 19 report (31 Oct – 4 Nov 2026)",
+        "Open Week 20 report (7–11 Nov 2026; report mirror)",
+        "https://humara.org/report/2552b18b-af4f-490f-805c-a005a3b012ba",
+    )
+    st.link_button(
+        "Open Week 19 report (31 Oct – 4 Nov 2026; latest verified figures)",
         "https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-19-31-october-04-november-2026",
     )
     st.link_button(
