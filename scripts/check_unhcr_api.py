@@ -8,75 +8,101 @@ import requests
 
 API_URL = "https://api-data.unhcr.org/api/v0/data/PopStatsOfficial"
 REQUIRED_FIELDS = {"time_period", "pop_type", "obs_value"}
+POPULATION_TYPES = ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP", "STA"]
 
 
 def main() -> int:
-    params = {
-        "c[pop_type]": "REF_UNHCR",
-        "dimensions": "default",
-        "sort": "time_period:desc",
-        "page": 1,
-        "page_size": 10,
+    checked_at = datetime.now(timezone.utc).isoformat()
+    summary = {
+        "checked_at_utc": checked_at,
+        "health_endpoint": "not_checked",
+        "population_types": {},
     }
+
     try:
-        response = requests.get(
-            API_URL,
-            params=params,
+        health = requests.get(
+            "https://api-data.unhcr.org/api/v0/health",
             headers={"User-Agent": "Global-Displacement-Intelligence/0.2"},
-            timeout=(10, 30),
+            timeout=(10, 20),
         )
-        response.raise_for_status()
-        payload = response.json()
-    except (requests.RequestException, ValueError) as exc:
-        print(f"FAIL: UNHCR endpoint request failed: {exc}")
+        health.raise_for_status()
+        summary["health_endpoint"] = "reachable"
+        summary["health_http_status"] = health.status_code
+    except requests.RequestException as exc:
+        summary["health_endpoint"] = f"failed: {exc}"
+        print(json.dumps(summary, indent=2))
         return 1
 
-    if not isinstance(payload, dict):
-        print("FAIL: API response root is not a JSON object.")
-        return 1
-    rows = payload.get("data")
-    if not isinstance(rows, list):
-        print("FAIL: API response does not contain a data list.")
-        return 1
-    if not rows:
-        print("FAIL: API returned no observations for REF_UNHCR.")
-        return 1
-
-    missing = REQUIRED_FIELDS.difference(rows[0])
-    if missing:
-        print("FAIL: first observation is missing fields: " + ", ".join(sorted(missing)))
-        return 1
-
-    periods = sorted({str(row.get("time_period")) for row in rows if row.get("time_period")})
-    if not periods:
-        print("FAIL: no reporting period found in returned observations.")
-        return 1
-
-    invalid_values = []
-    for index, row in enumerate(rows):
+    for pop_type in POPULATION_TYPES:
+        params = {
+            "c[pop_type]": pop_type,
+            "dimensions": "default",
+            "sort": "time_period:desc",
+            "page": 1,
+            "page_size": 10,
+        }
         try:
-            float(row["obs_value"])
-        except (TypeError, ValueError, KeyError):
-            invalid_values.append(index)
-    if invalid_values:
-        print(f"FAIL: {len(invalid_values)} of {len(rows)} observations have non-numeric obs_value.")
-        return 1
+            response = requests.get(
+                API_URL,
+                params=params,
+                headers={"User-Agent": "Global-Displacement-Intelligence/0.2"},
+                timeout=(10, 30),
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            summary["population_types"][pop_type] = {"status": "request_failed", "error": str(exc)}
+            continue
 
-    pagination = payload.get("pagination")
-    if pagination is not None and not isinstance(pagination, dict):
-        print("FAIL: pagination metadata is not an object.")
-        return 1
+        if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+            summary["population_types"][pop_type] = {"status": "invalid_response"}
+            continue
 
-    result = {
-        "status": "ok",
-        "checked_at_utc": datetime.now(timezone.utc).isoformat(),
-        "observations_checked": len(rows),
-        "latest_period_in_sample": max(periods),
-        "pagination_metadata_present": isinstance(pagination, dict),
-        "has_next": pagination.get("has_next") if isinstance(pagination, dict) else None,
-    }
-    print(json.dumps(result, indent=2))
-    return 0
+        rows = payload["data"]
+        if not rows:
+            summary["population_types"][pop_type] = {"status": "no_observations"}
+            continue
+
+        missing = REQUIRED_FIELDS.difference(rows[0])
+        if missing:
+            summary["population_types"][pop_type] = {
+                "status": "missing_fields",
+                "missing_fields": sorted(missing),
+            }
+            continue
+
+        invalid = 0
+        for row in rows:
+            try:
+                float(row["obs_value"])
+            except (TypeError, ValueError, KeyError):
+                invalid += 1
+
+        pagination = payload.get("pagination")
+        pagination_ok = (
+            isinstance(pagination, dict)
+            and isinstance(pagination.get("has_next"), bool)
+            and isinstance(pagination.get("page"), int)
+        )
+        periods = [str(row["time_period"]) for row in rows if row.get("time_period")]
+        status = "ok" if invalid == 0 and pagination_ok and periods else "data_quality_warning"
+        summary["population_types"][pop_type] = {
+            "status": status,
+            "observations_checked": len(rows),
+            "latest_period_in_sample": max(periods) if periods else None,
+            "invalid_values": invalid,
+            "pagination_metadata_valid": pagination_ok,
+            "has_next": pagination.get("has_next") if isinstance(pagination, dict) else None,
+        }
+
+    failed = [
+        code for code, result in summary["population_types"].items()
+        if result.get("status") != "ok"
+    ]
+    summary["overall_status"] = "ok" if not failed else "warning"
+    summary["population_types_with_issues"] = failed
+    print(json.dumps(summary, indent=2))
+    return 0 if not failed else 1
 
 
 if __name__ == "__main__":
