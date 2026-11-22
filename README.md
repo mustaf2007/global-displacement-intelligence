@@ -123,3 +123,13 @@ The Somalia subnational page includes a Week 19 validation and provenance panel.
 ### Somalia ETT normalized observations
 
 The Week 19 snapshot can be represented as a long-format observation table through `src/ett_timeseries.py`. Each record retains source attribution, reporting-period dates, coverage, population group, indicator, measure type, geographic dimension, geography, value and unit. The initial release contains one verified reporting period only; it does not manufacture missing weeks or imply a complete time series. Weekly arrivals, cumulative arrivals, regional origin/destination distributions and reported reason shares remain distinct measures. Validation checks required fields, non-negative numeric values, valid period ordering and unique observation keys. The dashboard provides CSV export of these normalized records. The normalized table is a foundation for future weekly ingestion, not a claim that automated historical ingestion is already available.
+
+
+A versioned baseline registry is stored at `data/somalia_ett_observations.json`. To initialize or append a reviewed batch locally:
+
+```bash
+python scripts/append_ett_report.py --initialize
+python scripts/append_ett_report.py --input path/to/verified_observations.json
+```
+
+The append utility validates existing and incoming records, rejects duplicate observation keys, and never overwrites an existing observation. The JSON input must be a list of normalized records. Source verification and transcription remain a human review step; passing structural validation does not authenticate a report or its figures. Commit the reviewed registry update to preserve its version history.
