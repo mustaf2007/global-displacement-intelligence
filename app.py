@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.express as px
 import pycountry
+import requests
 import streamlit as st
 from src.geo import country_iso3
 from src.quality import audit_population_data, reconciliation_by_period
@@ -288,6 +289,94 @@ if analysis_view == "Somalia subnational data":
         "New arrivals": [2188, 1985, 1929, 1883, 1041, 769, 656],
     }).sort_values("New arrivals", ascending=False)
     st.markdown("**Reported destination regions — Week 19**")
+    st.caption(
+        "The map joins the seven published destination-region counts to a separate "
+        "administrative-boundary reference layer. Regions without a reported Week 19 "
+        "count remain unshaded; they are not interpreted as zero."
+    )
+
+    @st.cache_data(ttl=86400, show_spinner=False)
+    def load_somalia_admin1_geojson():
+        boundary_url = (
+            "https://services.arcgis.com/HwB9RoolJXJlKJ40/ArcGIS/rest/services/"
+            "Som_Admbnda_Adm1_UNDP/FeatureServer/6/query"
+        )
+        response = requests.get(
+            boundary_url,
+            params={
+                "where": "1=1",
+                "outFields": "ADM1_EN,ADM1_PCODE",
+                "returnGeometry": "true",
+                "outSR": "4326",
+                "f": "geojson",
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        geojson = response.json()
+        if geojson.get("type") != "FeatureCollection" or not geojson.get("features"):
+            raise ValueError("The administrative-boundary service returned no GeoJSON features.")
+        return geojson
+
+    region_boundary_names = {
+        "Gedo": "Gedo",
+        "Bay": "Bay",
+        "Banadir": "Banaadir",
+        "Middle Shabelle": "Middle Shabelle",
+        "Hiraan": "Hiiraan",
+        "Lower Juba": "Lower Juba",
+        "Lower Shabelle": "Lower Shabelle",
+    }
+    map_data = destinations.copy()
+    map_data["Boundary region"] = map_data["Destination region"].map(region_boundary_names)
+    try:
+        somalia_geojson = load_somalia_admin1_geojson()
+        boundary_names = {
+            str(feature.get("properties", {}).get("ADM1_EN", "")).strip().casefold()
+            for feature in somalia_geojson["features"]
+        }
+        map_data = map_data[
+            map_data["Boundary region"].str.casefold().isin(boundary_names)
+        ].copy()
+        if len(map_data) != len(destinations):
+            missing_matches = sorted(
+                set(destinations["Destination region"]) - set(map_data["Destination region"])
+            )
+            st.warning(
+                "Some published destination names could not be matched to the boundary "
+                f"layer and were withheld from the map: {', '.join(missing_matches)}."
+            )
+        if not map_data.empty:
+            regional_map = px.choropleth(
+                map_data,
+                geojson=somalia_geojson,
+                locations="Boundary region",
+                featureidkey="properties.ADM1_EN",
+                color="New arrivals",
+                hover_name="Destination region",
+                hover_data={"New arrivals": ":,", "Boundary region": False},
+                color_continuous_scale="YlOrRd",
+                title="New arrivals by destination region — Week 19",
+            )
+            regional_map.update_geos(
+                fitbounds="locations",
+                visible=False,
+                showcountries=True,
+                showcoastlines=True,
+            )
+            regional_map.update_layout(
+                height=620,
+                margin={"l": 0, "r": 0, "t": 55, "b": 0},
+                coloraxis_colorbar_title="New arrivals",
+            )
+            st.plotly_chart(regional_map, use_container_width=True)
+        else:
+            st.warning("No destination regions could be matched to the boundary layer.")
+    except (requests.RequestException, ValueError, KeyError) as exc:
+        st.warning(
+            "The regional map could not be loaded from the boundary service. "
+            f"The source table remains available below. Details: {exc}"
+        )
     st.dataframe(destinations, hide_index=True, use_container_width=True)
     st.caption(
         "The published report gives destination-region counts. These are not district totals. "
