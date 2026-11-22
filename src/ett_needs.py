@@ -34,6 +34,20 @@ MAIN_IDP_NEEDS = [
 ]
 
 
+def needs_response_gap_rows():
+    """Return descriptive percentage-point gaps where response is numeric."""
+    rows = []
+    for item in NEW_ARRIVAL_NEEDS:
+        response = item["response_pct"]
+        rows.append({
+            **item,
+            "need_response_gap_pp": (
+                item["need_pct"] - response if isinstance(response, int) else None
+            ),
+        })
+    return rows
+
+
 def validate_week19_needs():
     """Validate transcription structure and numeric bounds without imputing text categories."""
     sectors = [row["sector"] for row in NEW_ARRIVAL_NEEDS]
