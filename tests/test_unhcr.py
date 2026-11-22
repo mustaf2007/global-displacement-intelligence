@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend
+from src.unhcr import UNHCRDataError, _fetch_all, country_ranking, explicit_global_total, population_types, population_period_coverage, country_period_changes, population_measure_type, explicit_total_trend, country_pressure_signals
 
 
 class FetchAllTests(unittest.TestCase):
