@@ -48,7 +48,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends", "Displacement pressure signals"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -217,6 +217,104 @@ if analysis_view == "Global displacement trends":
     )
     st.stop()
 
+
+
+if analysis_view == "Somalia displacement profile":
+    st.header("Somalia displacement intelligence profile")
+    st.caption(
+        "A country-focused view of population statistics reported through UNHCR's official "
+        "PopStatsOfficial series. Hosting and origin dimensions are shown separately."
+    )
+    st.info(
+        "Somalia as a hosting country measures people reported in Somalia. Somalia as a country "
+        "of origin measures people reported as originating from Somalia. These are different "
+        "dimensions and must not be added together."
+    )
+
+    with st.spinner("Retrieving Somalia's historical hosting and origin series..."):
+        try:
+            somalia_host_trend = country_trend(selected_type, "SOM", "ref_area_adm0")
+        except UNHCRDataError as exc:
+            st.warning(f"Somalia hosting series could not be retrieved: {exc}")
+            somalia_host_trend = pd.DataFrame()
+        try:
+            somalia_origin_trend = country_trend(selected_type, "SOM", "area_ori_adm0")
+        except UNHCRDataError as exc:
+            st.warning(f"Somalia origin series could not be retrieved: {exc}")
+            somalia_origin_trend = pd.DataFrame()
+
+    left, right = st.columns(2)
+    if not somalia_host_trend.empty:
+        latest_host = somalia_host_trend.iloc[-1]
+        left.metric("Somalia — hosting population", f"{latest_host['population']:,.0f}", help=f"Latest available period: {latest_host['time_period']}")
+        host_fig = px.line(
+            somalia_host_trend, x="time_period", y="population", markers=True,
+            labels={"time_period": "Reporting period", "population": "People"},
+            title="Population hosted in Somalia",
+        )
+        host_fig.update_layout(yaxis_tickformat=",", xaxis_tickangle=-45)
+        left.plotly_chart(host_fig, use_container_width=True)
+    else:
+        left.info("No unambiguous historical hosting series was returned for Somalia and this category.")
+
+    if not somalia_origin_trend.empty:
+        latest_origin = somalia_origin_trend.iloc[-1]
+        right.metric("Somalia — origin population", f"{latest_origin['population']:,.0f}", help=f"Latest available period: {latest_origin['time_period']}")
+        origin_fig = px.line(
+            somalia_origin_trend, x="time_period", y="population", markers=True,
+            labels={"time_period": "Reporting period", "population": "People"},
+            title="Population originating from Somalia",
+        )
+        origin_fig.update_layout(yaxis_tickformat=",", xaxis_tickangle=-45)
+        right.plotly_chart(origin_fig, use_container_width=True)
+    else:
+        right.info("No unambiguous historical origin series was returned for Somalia and this category.")
+
+    st.subheader("Somalia and neighbouring countries — hosting comparison")
+    st.caption(
+        f"Selected category: {type_labels.get(selected_type, selected_type)} · "
+        f"Reporting period: {selected_period}. Comparison uses country-of-asylum totals only."
+    )
+    host_ranking = country_ranking(df, selected_type, "ref_area_adm0", selected_period, limit=300)
+    neighbours = {"SOM": "Somalia", "ETH": "Ethiopia", "KEN": "Kenya", "DJI": "Djibouti", "YEM": "Yemen"}
+    if host_ranking.empty:
+        st.info("No unique hosting-country totals are available for the selected period.")
+    else:
+        host_ranking = host_ranking.copy()
+        host_ranking["iso3"] = host_ranking["country"].map(country_iso3)
+        regional = host_ranking[host_ranking["iso3"].isin(neighbours)].copy()
+        regional["country"] = regional["iso3"].map(neighbours)
+        regional = regional[["country", "iso3", "population"]].sort_values("population", ascending=False)
+        if regional.empty:
+            st.info("No comparable Somalia / neighbouring-country records were returned for this period.")
+        else:
+            st.dataframe(regional, hide_index=True, use_container_width=True)
+            regional_fig = px.bar(
+                regional.sort_values("population"),
+                x="population", y="country", orientation="h",
+                labels={"population": "People", "country": "Hosting country"},
+                title="Reported hosting populations in the Horn of Africa and Yemen",
+            )
+            regional_fig.update_layout(xaxis_tickformat=",")
+            st.plotly_chart(regional_fig, use_container_width=True)
+            st.download_button(
+                "Download regional comparison (CSV)",
+                data=regional.to_csv(index=False).encode("utf-8-sig"),
+                file_name=f"somalia_neighbour_comparison_{selected_type}_{selected_period}.csv",
+                mime="text/csv",
+            )
+
+    st.warning(
+        "Interpretation limits: this page reports only the selected UNHCR population category. "
+        "It does not combine refugee, asylum-seeker, IDP, returnee or other categories into one "
+        "displacement total. Neighbouring-country comparisons are descriptive and do not establish "
+        "causes, cross-border movements, or national vulnerability."
+    )
+    st.markdown(
+        "Source: [UNHCR Population Statistics](https://refugeedata.unhcr.org/en/data-finder/detail/PopStatsOfficial/data/) · "
+        "[UNHCR API documentation](https://refugeedata.unhcr.org/en/documentation/technical-reference/api/)"
+    )
+    st.stop()
 
 if analysis_view == "Displacement pressure signals":
     st.header("Country displacement pressure signals")
