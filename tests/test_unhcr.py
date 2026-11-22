@@ -242,6 +242,24 @@ class CountryHistoricalComparisonTests(unittest.TestCase):
         result = country_historical_comparison(self.frame, "REF_UNHCR", "invalid", ["KEN"])
         self.assertTrue(result.empty)
 
+    def test_uses_default_country_totals_when_opposite_dimension_is_absent(self):
+        # Model the actual UNHCR default/headline response: one country-total
+        # row per country-period, with no opposite geography dimension.
+        default_view = self.frame.iloc[:4].drop(columns=["area_ori_adm0"])
+        result = country_historical_comparison(
+            default_view, "REF_UNHCR", "ref_area_adm0", ["KEN", "UGA"]
+        )
+        self.assertEqual(len(result), 4)
+        self.assertEqual(set(result["country"]), {"Kenya", "Uganda"})
+        self.assertNotIn(999, result["population"].tolist())
+
+    def test_returns_empty_when_selected_geography_is_absent(self):
+        no_host_dimension = self.frame.drop(columns=["ref_area_adm0"])
+        result = country_historical_comparison(
+            no_host_dimension, "REF_UNHCR", "ref_area_adm0", ["KEN"]
+        )
+        self.assertTrue(result.empty)
+
 
 class CountryProfileSeriesTests(unittest.TestCase):
     def test_keeps_population_categories_separate(self):

@@ -290,15 +290,23 @@ if analysis_view == "Country historical comparison":
     )
     opposite = "area_ori_adm0" if geo == "ref_area_adm0" else "ref_area_adm0"
     label_col = f"{geo}_label"
-    if geo not in df.columns or opposite not in df.columns:
-        st.warning("The retrieved records do not contain the dimensions needed for this comparison.")
+    if geo not in df.columns:
+        st.warning(f"The retrieved records do not contain the selected country dimension ({geo}).")
         st.stop()
-    options_frame = df[
+    country_mask = (
         df["pop_type"].astype("string").eq(selected_type)
-        & df[opposite].astype("string").eq("_T")
         & df[geo].notna()
         & ~df[geo].astype("string").isin(["_T", "_X"])
-    ][[geo] + ([label_col] if label_col in df.columns else [])].drop_duplicates()
+    )
+    # The UNHCR default response is its headline country-total view. Some
+    # population categories return only the selected geography; when the
+    # opposite dimension is present, explicitly retain its _T totals.
+    if opposite in df.columns:
+        country_mask &= df[opposite].astype("string").eq("_T")
+    options_frame = df.loc[
+        country_mask,
+        [geo] + ([label_col] if label_col in df.columns else [])
+    ].drop_duplicates()
     options_frame["country_code"] = options_frame[geo].astype(str)
     options_frame["country_name"] = options_frame[label_col] if label_col in options_frame.columns else options_frame["country_code"]
     options_frame = options_frame.drop_duplicates("country_code").sort_values("country_name")
