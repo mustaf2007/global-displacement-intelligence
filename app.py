@@ -102,16 +102,59 @@ else:
                     origins = pd.DataFrame()
 
             if not origins.empty:
+                # Use the selected hosting-country headline total from the same
+                # population type and reporting period as the origin breakdown.
+                host_rows = ranking[
+                    ranking["country"].astype(str).eq(chosen)
+                ]["population"].dropna()
+                host_total = float(host_rows.iloc[0]) if len(host_rows) == 1 else None
+                origins = origins.copy()
+                origin_sum = float(origins["population"].sum())
+
+                if host_total is not None and host_total > 0:
+                    origins["share_of_host_total_pct"] = (
+                        origins["population"] / host_total * 100
+                    )
+                    coverage_pct = origin_sum / host_total * 100
+                    x, y, z = st.columns(3)
+                    x.metric("Hosting-country total", f"{host_total:,.0f}")
+                    y.metric("Origin records retrieved", f"{origin_sum:,.0f}")
+                    z.metric("Origin coverage", f"{coverage_pct:.1f}%")
+
+                    if origin_sum <= host_total:
+                        unallocated = host_total - origin_sum
+                        st.caption(
+                            f"{unallocated:,.0f} people ({100 - coverage_pct:.1f}%) "
+                            "are not represented in the listed origin-country records. "
+                            "This may include unspecified origin or other unreturned categories; "
+                            "it is not assigned to a country."
+                        )
+                    else:
+                        st.warning(
+                            "The sum of origin-country records exceeds the hosting-country total. "
+                            "Do not interpret the percentages as reconciled until the API dimensions "
+                            "and source records have been investigated."
+                        )
+                else:
+                    st.warning(
+                        "A unique hosting-country total was not available for this selection. "
+                        "Origin shares and reconciliation are therefore not calculated."
+                    )
+
                 origin_fig = px.bar(
                     origins.head(15).sort_values("population"),
                     x="population",
                     y="country_of_origin",
                     orientation="h",
                     labels={"population": "People", "country_of_origin": "Country of origin"},
+                    hover_data={"share_of_host_total_pct": ":.1f%"} if "share_of_host_total_pct" in origins.columns else None,
                 )
                 origin_fig.update_layout(height=max(380, 25 * min(len(origins), 15)), yaxis_title=None)
                 st.plotly_chart(origin_fig, use_container_width=True)
-                st.dataframe(origins, hide_index=True, use_container_width=True)
+                display_cols = ["country_of_origin", "population"]
+                if "share_of_host_total_pct" in origins.columns:
+                    display_cols.append("share_of_host_total_pct")
+                st.dataframe(origins[display_cols], hide_index=True, use_container_width=True)
             else:
                 st.info(
                     "No unambiguous country-of-origin records were returned for this hosting country "
