@@ -24,7 +24,8 @@ type_labels = {
     "REF_UNRWA": "Palestine refugees under UNRWA's mandate",
     "ASY": "Asylum-seekers",
     "OIP": "Other people in need of international protection",
-    "IDP": "Internally displaced people",
+    "IDP_UNHCR": "Internally displaced people protected/assisted by UNHCR",
+    "IDP_IDMC": "Internally displaced people (IDMC data)",
     "STA": "Stateless people",
 }
 
