@@ -756,7 +756,7 @@ if analysis_view == "Somalia subnational data":
                 "8 additional districts were phased in; up to 13 districts in total",
                 "11 additional districts were added, expanding the series to 16 districts",
                 "16 districts assessed",
-                "16 districts assessed; numerical figures not yet integrated into this dashboard",
+                "16 districts assessed; Week 20 numerical snapshot integrated into the dashboard",
             ],
             "Reference": [
                 "14 June 2026",
@@ -801,7 +801,7 @@ if analysis_view == "Somalia subnational data":
         "These categories are shown as reported text rather than being converted to 0%."
     )
     st.divider()
-    st.subheader("Reported needs and humanitarian response — Week 19")
+    st.subheader("Historical reference: needs and humanitarian response — Week 19")
     needs_checks = validate_week19_needs()
     if all(needs_checks.values()):
         st.caption(
@@ -875,22 +875,61 @@ if analysis_view == "Somalia subnational data":
         st.error("Week 19 needs transcription validation failed; these indicators are withheld.")
 
     monitored_districts = ett_week19["districts"]
-    with st.expander("View the 16 districts monitored in Week 19"):
+    with st.expander("View the 16 districts monitored in Week 19 (historical reference)"):
         st.write(", ".join(monitored_districts))
         st.caption(
             "This is the reporting coverage list, not a ranking. District-level arrival "
             "counts are not displayed here because the currently integrated table contains "
             "regional destination totals only."
         )
-    destinations = pd.DataFrame({
-        "Destination region": [item["region"] for item in ett_week19["destinations"]],
-        "New arrivals": [item["arrivals"] for item in ett_week19["destinations"]],
-    }).sort_values("New arrivals", ascending=False)
-    st.markdown("**Reported destination regions — Week 19**")
+    week20_origin_rows = [
+        row for row in ett_registry
+        if row.get("period_start") == "2026-11-07"
+        and row.get("indicator") == "new_arrivals"
+        and row.get("geography_type") == "origin_region"
+    ]
+    week20_destination_rows = [
+        row for row in ett_registry
+        if row.get("period_start") == "2026-11-07"
+        and row.get("indicator") == "new_arrivals"
+        and row.get("geography_type") == "destination_region"
+    ]
+    origins_week20 = pd.DataFrame([
+        {"Origin region": row["geography"], "New arrivals": row["value"]}
+        for row in week20_origin_rows
+    ]).sort_values("New arrivals", ascending=False)
+    destinations = pd.DataFrame([
+        {"Destination region": row["geography"], "New arrivals": row["value"]}
+        for row in week20_destination_rows
+    ]).sort_values("New arrivals", ascending=False)
+    st.markdown("**Week 20 reported origins and destinations**")
     st.caption(
-        "The map joins the seven published destination-region counts to a separate "
-        "administrative-boundary reference layer. Regions without a reported Week 19 "
-        "count remain unshaded; they are not interpreted as zero."
+        "Origin and destination are separate marginal distributions in the IOM report. "
+        "They are not linked origin-to-destination routes and must not be interpreted as a bilateral flow matrix."
+    )
+    origin_col, destination_col = st.columns(2)
+    with origin_col:
+        st.markdown("**Reported origins — Week 20**")
+        st.dataframe(origins_week20, hide_index=True, use_container_width=True)
+        st.download_button(
+            "Download Week 20 origin distribution (CSV)",
+            data=origins_week20.to_csv(index=False).encode("utf-8-sig"),
+            file_name="somalia_ett_week20_origins.csv",
+            mime="text/csv",
+        )
+    with destination_col:
+        st.markdown("**Reported destinations — Week 20**")
+        st.dataframe(destinations, hide_index=True, use_container_width=True)
+        st.download_button(
+            "Download Week 20 destination distribution (CSV)",
+            data=destinations.to_csv(index=False).encode("utf-8-sig"),
+            file_name="somalia_ett_week20_destinations.csv",
+            mime="text/csv",
+        )
+    st.caption(
+        "The map joins published Week 20 destination-region counts to a separate "
+        "administrative-boundary reference layer. Regions without a reported count "
+        "remain unshaded; they are not interpreted as zero."
     )
 
     @st.cache_data(ttl=86400, show_spinner=False)
@@ -960,7 +999,7 @@ if analysis_view == "Somalia subnational data":
                 hover_name="Destination region",
                 hover_data={"New arrivals": ":,", "Boundary region": False},
                 color_continuous_scale="YlOrRd",
-                title="New arrivals by destination region — Week 19",
+                title="New arrivals by destination region — Week 20",
             )
             regional_map.update_geos(
                 fitbounds="locations",
