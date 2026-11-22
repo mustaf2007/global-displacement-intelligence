@@ -1081,6 +1081,37 @@ if analysis_view == "Somalia subnational data":
                 )
             )
 
+    with st.expander("Historical source register and extraction status"):
+        try:
+            with open("data/somalia_ett_source_register.json", encoding="utf-8") as source_file:
+                source_register = json.load(source_file)
+            source_frame = pd.DataFrame(source_register)
+            st.caption(
+                "This register separates source discovery from numerical extraction. "
+                "A listed report is not treated as a verified observation until its figures "
+                "have been transcribed and validated."
+            )
+            display_source_cols = [
+                "title", "source_type", "period_start", "period_end",
+                "coverage_districts", "extraction_status", "source_url",
+            ]
+            st.dataframe(
+                source_frame[display_source_cols],
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "source_url": st.column_config.LinkColumn("Official source"),
+                },
+            )
+            st.download_button(
+                "Download ETT source register (JSON)",
+                data=json.dumps(source_register, indent=2).encode("utf-8"),
+                file_name="somalia_ett_source_register.json",
+                mime="application/json",
+            )
+        except (OSError, json.JSONDecodeError, KeyError) as exc:
+            st.warning(f"The ETT source register could not be loaded: {exc}")
+
     if consistency_checks["Result"].eq("Review").any():
         st.warning(
             "At least one arithmetic check does not match its reference. "
