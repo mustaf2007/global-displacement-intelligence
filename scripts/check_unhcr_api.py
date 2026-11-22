@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import requests
 
 API_URL = "https://api-data.unhcr.org/api/v0/data/PopStatsOfficial"
+CONSTRAINTS_URL = "https://api-data.unhcr.org/api/v0/constraints/PopStatsOfficial"
 REQUIRED_FIELDS = {"time_period", "pop_type", "obs_value"}
 POPULATION_TYPES = ["REF_UNHCR", "REF_UNRWA", "ASY", "OIP", "IDP", "STA"]
 
@@ -32,6 +33,35 @@ def main() -> int:
         summary["health_endpoint"] = f"failed: {exc}"
         print(json.dumps(summary, indent=2))
         return 1
+
+    try:
+        constraints_response = requests.get(
+            CONSTRAINTS_URL,
+            headers={"User-Agent": "Global-Displacement-Intelligence/0.2"},
+            timeout=(10, 20),
+        )
+        constraints_response.raise_for_status()
+        constraints = constraints_response.json()
+        dimensions = constraints.get("dimensions", [])
+        summary["constraints_top_level_keys"] = sorted(constraints.keys())
+        summary["dimensions_shape"] = type(dimensions).__name__
+        if isinstance(dimensions, list):
+            summary["dimension_names"] = [
+                item.get("code") or item.get("name") or item.get("id")
+                for item in dimensions if isinstance(item, dict)
+            ]
+            pop_dimension = next(
+                (item for item in dimensions if isinstance(item, dict)
+                 and (item.get("code") or item.get("name") or item.get("id")) == "pop_type"),
+                None,
+            )
+            if pop_dimension:
+                summary["pop_type_dimension_sample"] = pop_dimension
+        elif isinstance(dimensions, dict):
+            summary["dimension_names"] = sorted(dimensions.keys())
+            summary["pop_type_dimension_sample"] = dimensions.get("pop_type")
+    except (requests.RequestException, ValueError) as exc:
+        summary["constraints_error"] = str(exc)
 
     for pop_type in POPULATION_TYPES:
         params = {
