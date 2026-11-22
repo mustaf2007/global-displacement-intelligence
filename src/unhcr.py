@@ -84,6 +84,23 @@ def load_population_data(pop_type: str = "REF_UNHCR") -> pd.DataFrame:
     return frame.drop_duplicates()
 
 
+
+def filter_reporting_periods(
+    frame: pd.DataFrame,
+    start_period: str,
+    end_period: str,
+) -> pd.DataFrame:
+    """Return records within an inclusive reporting-period range."""
+    if "time_period" not in frame.columns:
+        return frame.iloc[0:0].copy()
+    start, end = str(start_period), str(end_period)
+    if start > end:
+        raise ValueError("The start reporting period must not be later than the end period.")
+    periods = frame["time_period"].astype("string")
+    mask = periods.notna() & periods.ge(start) & periods.le(end)
+    return frame.loc[mask].copy()
+
+
 def latest_period(frame: pd.DataFrame) -> str | None:
     periods = frame["time_period"].dropna().astype(str)
     return max(periods) if not periods.empty else None
