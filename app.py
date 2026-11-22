@@ -14,6 +14,7 @@ from src.unhcr import (
     country_origin_breakdown,
     population_types,
     population_period_coverage,
+    country_period_changes,
 )
 
 st.set_page_config(page_title="Global Refugee & Displacement Intelligence", page_icon="🌍", layout="wide")
@@ -41,7 +42,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -160,6 +161,78 @@ ranking = country_ranking(
     df, selected_type, geo, selected_period,
     limit=200 if analysis_view in ("Global hosting comparison", "Global hosting map") else 20,
 )
+
+if analysis_view == "Historical change analysis":
+    st.header("Historical country change analysis")
+    st.caption(
+        "Compares country-level totals between two observed reporting periods. "
+        "Only countries with a valid observation in both periods are included."
+    )
+    if len(periods) < 2:
+        st.info("At least two reporting periods are required for a change comparison.")
+        st.stop()
+    default_later = len(periods) - 1
+    default_earlier = max(0, default_later - 1)
+    p1, p2 = st.columns(2)
+    earlier_period = p1.selectbox("Earlier reporting period", periods, index=default_earlier)
+    later_period = p2.selectbox("Later reporting period", periods, index=default_later)
+    if earlier_period == later_period:
+        st.warning("Choose two different reporting periods.")
+        st.stop()
+
+    changes = country_period_changes(df, selected_type, "ref_area_adm0", earlier_period, later_period)
+    if changes.empty:
+        st.warning(
+            "No comparable country totals were available for both periods, or duplicate "
+            "dimension keys prevented a safe comparison."
+        )
+    else:
+        increases = changes[changes["absolute_change"] > 0].sort_values("absolute_change", ascending=False)
+        decreases = changes[changes["absolute_change"] < 0].sort_values("absolute_change")
+        unchanged = int((changes["absolute_change"] == 0).sum())
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Countries compared", f"{len(changes):,}")
+        m2.metric("Countries with increases", f"{len(increases):,}")
+        m3.metric("Countries with decreases", f"{len(decreases):,}")
+        st.caption(f"Population category: {type_labels.get(selected_type, selected_type)} · {earlier_period} to {later_period} · {unchanged} unchanged")
+        if not increases.empty:
+            st.subheader("Largest increases")
+            increase_chart = px.bar(
+                increases.head(15).sort_values("absolute_change"),
+                x="absolute_change", y="country", orientation="h",
+                labels={"absolute_change": "Absolute change (people)", "country": "Hosting country"},
+            )
+            st.plotly_chart(increase_chart, use_container_width=True)
+            st.dataframe(increases, hide_index=True, use_container_width=True)
+        if not decreases.empty:
+            st.subheader("Largest decreases")
+            decrease_chart = px.bar(
+                decreases.head(15).sort_values("absolute_change"),
+                x="absolute_change", y="country", orientation="h",
+                labels={"absolute_change": "Absolute change (people)", "country": "Hosting country"},
+            )
+            st.plotly_chart(decrease_chart, use_container_width=True)
+            st.dataframe(decreases, hide_index=True, use_container_width=True)
+        st.subheader("All comparable countries")
+        st.dataframe(changes, hide_index=True, use_container_width=True)
+        export = changes.copy()
+        export.insert(0, "later_period", later_period)
+        export.insert(0, "earlier_period", earlier_period)
+        export.insert(0, "population_category", selected_type)
+        st.download_button(
+            "Download country change analysis (CSV)",
+            data=export.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"country_changes_{selected_type}_{earlier_period}_{later_period}.csv",
+            mime="text/csv",
+        )
+    st.info(
+        "Method: absolute change = later-period population minus earlier-period population. "
+        "Percentage change is calculated only where the earlier value is non-zero. "
+        "Countries missing either period are excluded, not assigned zero. Results are "
+        "descriptive comparisons, not causal explanations or forecasts. For flow-related "
+        "categories, changes should not be interpreted as changes in a population stock."
+    )
+    st.stop()
 
 if analysis_view == "Global hosting map":
     st.header("Global refugee hosting map")
