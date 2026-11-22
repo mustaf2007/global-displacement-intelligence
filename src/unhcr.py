@@ -321,6 +321,39 @@ def explicit_total_trend(frame: pd.DataFrame, pop_type: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=columns)
 
 
+
+def decade_comparison(frame: pd.DataFrame, pop_type: str) -> pd.DataFrame:
+    """Summarize explicit global totals by decade without mixing stock and flow logic."""
+    trend = explicit_total_trend(frame, pop_type)
+    columns = ["decade", "population", "observed_periods", "summary_method"]
+    if trend.empty:
+        return pd.DataFrame(columns=columns)
+    years = pd.to_numeric(trend["time_period"].astype(str).str[:4], errors="coerce")
+    trend = trend.assign(year=years).dropna(subset=["year"]).copy()
+    if trend.empty:
+        return pd.DataFrame(columns=columns)
+    trend["year"] = trend["year"].astype(int)
+    trend["decade_start"] = (trend["year"] // 10) * 10
+    measure = population_measure_type(pop_type)
+    rows = []
+    for decade_start, group in trend.groupby("decade_start", sort=True):
+        group = group.sort_values(["year", "time_period"])
+        if measure == "stock":
+            selected = group.iloc[-1]
+            value = float(selected["population"])
+            method = "Last observed explicit total in decade (stock)"
+        else:
+            value = float(group["population"].mean())
+            method = "Mean of observed period-specific explicit flows (not a decade total)"
+        rows.append({
+            "decade": f"{decade_start}s",
+            "population": value,
+            "observed_periods": int(len(group)),
+            "summary_method": method,
+        })
+    return pd.DataFrame(rows, columns=columns)
+
+
 def country_pressure_signals(
     frame: pd.DataFrame,
     pop_type: str,
