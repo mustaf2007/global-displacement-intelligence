@@ -19,7 +19,7 @@ class ETTPeriodComparisonTests(unittest.TestCase):
 
     def compare(self, rows):
         return compare_ett_periods(
-            rows, "new_arrivals", "flow", "origin_region", "Week 19", "Week 20"
+            rows, "new_arrivals", "flow", "origin_region", "31 October–4 November 2026", "Week 20"
         )
 
     def test_shared_regions_are_compared_without_coverage_change(self):
