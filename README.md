@@ -81,12 +81,16 @@ The Somalia subnational workspace presents IOM DTM Emergency Trend Tracking (ETT
 - The origin and destination distributions each sum arithmetically to the reported Week 19 headline. This is a consistency check, not proof that each record represents a unique person or one-to-one movement.
 - ETT new arrivals are event-tracking flows and must not be interpreted as the total IDP population currently residing in Somalia. Secondary or repeated displacement may be included.
 - Monitoring coverage is partial and changes over time. An unassessed district is not a zero-displacement district.
+- ETT findings are estimates based on remote and in-person key-informant interviews, not a census or person-level registration. Many indicators describe the majority of displaced people at a location; detailed origins are not exhaustive.
+- Coverage focuses on main urban centres and surrounding areas in assessed districts, not every settlement or the full district population. GPS coordinates may be approximate.
+- Weekly comparisons must account for changing district coverage, collection pauses and interview-mode changes; missing weeks must not be interpolated as observed zeroes.
 - Week 20 report availability is linked in the app, but its numerical figures are not displayed until extracted and verified.
 
 Sources:
 - [IOM DTM Somalia](https://dtm.iom.int/somalia)
 - [IOM Somalia ETT dataset](https://dtm.iom.int/datasets/somalia-emergency-trend-tracking-dataset-june-2026-0)
 - [IOM Week 19 ETT report](https://dtm.iom.int/reports/somalia-emergency-trend-tracking-report-week-19-31-october-04-november-2026)
+- [IOM Q2 2026 ETT overview and methodology](https://dtm.iom.int/sites/g/files/tmzbdl1461/files/reports/DTM_SOM_ETT_Q2_2026_2.pdf?iframe=true)
 
 The current DTM dataset page is a source and coverage reference. Do not assume that a keyless, stable machine-readable API is available: the DTM API v3 requires a developer account/subscription key, and older API versions are no longer maintained.
 
