@@ -14,13 +14,16 @@ _GEO = {
 }
 
 
-def advanced_idp_quality_report(frame: pd.DataFrame, admin_level: int) -> dict:
-    """Return non-destructive geography, time, missingness and provenance checks."""
+def advanced_idp_quality_report(frame: pd.DataFrame, admin_level: int, as_of=None, stale_after_days: int = 365) -> dict:
+    """Return non-destructive geography, freshness, missingness and provenance checks."""
     if not isinstance(frame, pd.DataFrame):
         raise TypeError("frame must be a pandas DataFrame.")
     if admin_level not in _GEO:
         raise ValueError("admin_level must be 0, 1, or 2.")
 
+    if isinstance(stale_after_days, bool) or not isinstance(stale_after_days, int) or stale_after_days < 0:
+        raise ValueError("stale_after_days must be a non-negative integer.")
+    reference_date = pd.Timestamp(as_of).normalize() if as_of is not None else pd.Timestamp.now().normalize()
     name_col, code_col, parent_name_col, parent_code_col = _GEO[admin_level]
     dates = (
         pd.to_datetime(frame["reportingDate"], errors="coerce")
@@ -30,6 +33,15 @@ def advanced_idp_quality_report(frame: pd.DataFrame, admin_level: int) -> dict:
     report = {
         "admin_level": admin_level,
         "rows_returned": int(len(frame)),
+        "freshness": {
+            "reference_date": str(reference_date.date()),
+            "stale_after_days": stale_after_days,
+            "units_with_dates": 0,
+            "units_stale": 0,
+            "units_within_threshold": 0,
+            "units_without_valid_dates": 0,
+            "interpretation": f"Stale means the latest returned reporting date is more than {stale_after_days} days before {reference_date.date()}; this is a dashboard rule, not an official IOM status.",
+        },
         "geography": {
             "name_field": name_col,
             "code_field": code_col,
@@ -123,10 +135,22 @@ def advanced_idp_quality_report(frame: pd.DataFrame, admin_level: int) -> dict:
             .reset_index()
             .sort_values(["latest_reporting_date", "geographic_unit"], ascending=[False, True], na_position="last")
         )
+        coverage["days_since_latest"] = (reference_date - coverage["latest_reporting_date"].dt.normalize()).dt.days
+        coverage["freshness_status"] = "No valid reporting date"
+        has_date = coverage["latest_reporting_date"].notna()
+        coverage.loc[has_date & (coverage["days_since_latest"] > stale_after_days), "freshness_status"] = "Stale"
+        coverage.loc[has_date & (coverage["days_since_latest"] <= stale_after_days), "freshness_status"] = "Within threshold"
+        coverage = coverage.sort_values(["freshness_status", "latest_reporting_date", "geographic_unit"], ascending=[True, False, True], na_position="last")
+        report["freshness"]["units_with_dates"] = int(has_date.sum())
+        report["freshness"]["units_stale"] = int((coverage["freshness_status"] == "Stale").sum())
+        report["freshness"]["units_within_threshold"] = int((coverage["freshness_status"] == "Within threshold").sum())
+        report["freshness"]["units_without_valid_dates"] = int((coverage["freshness_status"] == "No valid reporting date").sum())
         for row in coverage.to_dict("records"):
             for key in ("first_reporting_date", "latest_reporting_date"):
                 value = row[key]
                 row[key] = str(value.date()) if pd.notna(value) else None
+            row["days_since_latest"] = int(row["days_since_latest"]) if pd.notna(row["days_since_latest"]) else None
+            row["freshness_status"] = str(row["freshness_status"])
             row["records_returned"] = int(row["records_returned"])
             row["unique_reporting_dates"] = int(row["unique_reporting_dates"])
             row["geographic_code"] = None if pd.isna(row["geographic_code"]) else str(row["geographic_code"])

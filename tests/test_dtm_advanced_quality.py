@@ -58,6 +58,25 @@ class DTMAadvancedQualityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             advanced_idp_quality_report(self.frame, 3)
 
+    def test_freshness_threshold_flags_units_individually(self):
+        result = advanced_idp_quality_report(self.frame, 2, as_of="2024-03-01", stale_after_days=20)
+        statuses = {row["geographic_unit"]: row["freshness_status"] for row in result["unit_reporting_coverage"]}
+        self.assertEqual(statuses["Baidoa"], "Stale")
+        self.assertEqual(statuses["Dayniile"], "Within threshold")
+        self.assertEqual(result["freshness"]["units_stale"], 1)
+        self.assertEqual(result["freshness"]["units_within_threshold"], 1)
+
+    def test_missing_dates_are_not_marked_as_zero_or_fresh(self):
+        frame = self.frame.copy()
+        frame["reportingDate"] = None
+        result = advanced_idp_quality_report(frame, 2, as_of="2024-03-01")
+        self.assertEqual(result["freshness"]["units_without_valid_dates"], 2)
+        self.assertTrue(all(row["freshness_status"] == "No valid reporting date" for row in result["unit_reporting_coverage"]))
+
+    def test_negative_freshness_threshold_is_rejected(self):
+        with self.assertRaises(ValueError):
+            advanced_idp_quality_report(self.frame, 2, stale_after_days=-1)
+
 
 if __name__ == "__main__":
     unittest.main()

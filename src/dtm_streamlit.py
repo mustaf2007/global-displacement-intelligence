@@ -134,8 +134,9 @@ def render_dtm_explorer() -> None:
             st.plotly_chart(chart, use_container_width=True)
         st.download_button('Download filtered observations (CSV)', data=displayed.to_csv(index=False).encode('utf-8-sig'), file_name=f'iom_dtm_somalia_admin{admin_level}_observations.csv', mime='text/csv')
 
-    advanced = advanced_idp_quality_report(raw, admin_level)
-    with st.expander('Data quality and geographic coverage details'):
+    with st.expander('Data quality and geographic coverage details', expanded=True):
+        stale_after_days = st.slider('Flag a unit as stale after (days)', min_value=30, max_value=1825, value=365, step=30, help='A configurable dashboard threshold based on each unit’s latest returned reporting date. It is not an official IOM quality classification.')
+        advanced = advanced_idp_quality_report(raw, admin_level, stale_after_days=stale_after_days)
         st.write('Basic structural diagnostics', quality)
         st.caption(summary['coverage_interpretation'])
         st.write('Returned geographic units', summary['geographic_units'])
@@ -150,14 +151,36 @@ def render_dtm_explorer() -> None:
         st.markdown('**Reporting-date coverage by returned geographic unit**')
         coverage = pd.DataFrame(advanced['unit_reporting_coverage'])
         if not coverage.empty:
+            f1, f2, f3 = st.columns(3)
+            f1.metric('Units flagged stale', advanced['freshness']['units_stale'])
+            f2.metric('Within selected threshold', advanced['freshness']['units_within_threshold'])
+            f3.metric('No valid dates', advanced['freshness']['units_without_valid_dates'])
             st.dataframe(coverage, hide_index=True, use_container_width=True)
+            st.download_button('Download unit freshness and coverage (CSV)', data=coverage.to_csv(index=False).encode('utf-8-sig'), file_name=f'iom_dtm_admin{admin_level}_unit_freshness.csv', mime='text/csv')
+            st.caption(advanced['freshness']['interpretation'])
+            date_matrix = raw.assign(_reporting_date=pd.to_datetime(raw['reportingDate'], errors='coerce')).dropna(subset=[geo_field, '_reporting_date']).pivot_table(index=geo_field, columns='_reporting_date', values='numPresentIdpInd', aggfunc='size', fill_value=0)
+            if not date_matrix.empty:
+                st.markdown('**District / unit reporting-date matrix**')
+                st.caption('Cells show the number of returned assessment records for each unit and date, not IDP population totals. Blank periods are not evidence of zero displacement.')
+                st.dataframe(date_matrix, use_container_width=True)
+                st.download_button('Download reporting-date matrix (CSV)', data=date_matrix.to_csv().encode('utf-8-sig'), file_name=f'iom_dtm_admin{admin_level}_date_matrix.csv', mime='text/csv')
         st.markdown('**Demographic and origin-field missingness**')
         missingness = pd.DataFrame(advanced['demographic_missingness'])
         if not missingness.empty:
             st.dataframe(missingness, hide_index=True, use_container_width=True)
+            st.download_button('Download missingness diagnostics (CSV)', data=missingness.to_csv(index=False).encode('utf-8-sig'), file_name=f'iom_dtm_admin{admin_level}_missingness.csv', mime='text/csv')
         st.markdown('**Assessment provenance breakdown**')
+        provenance_frames = []
         for field, rows in advanced['provenance_breakdown'].items():
-            st.write(field, pd.DataFrame(rows))
+            part = pd.DataFrame(rows)
+            if not part.empty:
+                part.insert(0, 'source_field', field)
+                provenance_frames.append(part)
+                st.write(field)
+                st.dataframe(part, hide_index=True, use_container_width=True)
+        if provenance_frames:
+            provenance = pd.concat(provenance_frames, ignore_index=True)
+            st.download_button('Download provenance breakdown (CSV)', data=provenance.to_csv(index=False).encode('utf-8-sig'), file_name=f'iom_dtm_admin{admin_level}_provenance.csv', mime='text/csv')
         st.caption(advanced['interpretation'])
         st.caption('These checks describe returned records only. They do not independently validate source assessments or establish complete national coverage.')
     st.markdown('**Source:** [IOM Displacement Tracking Matrix](https://dtm.iom.int/) · [DTM API documentation](https://dtm.iom.int/data-and-analysis/dtm-api)')
