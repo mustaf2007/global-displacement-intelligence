@@ -221,6 +221,47 @@ def country_trend(pop_type: str, geo_code: str, geography: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+
+def country_historical_comparison(
+    frame: pd.DataFrame,
+    pop_type: str,
+    geography: str,
+    country_codes: list[str],
+) -> pd.DataFrame:
+    """Return unique country-period totals for selected countries and one geography."""
+    columns = ["time_period", "country_code", "country", "population"]
+    if geography not in ("ref_area_adm0", "area_ori_adm0") or geography not in frame.columns:
+        return pd.DataFrame(columns=columns)
+    opposite = "area_ori_adm0" if geography == "ref_area_adm0" else "ref_area_adm0"
+    if opposite not in frame.columns:
+        return pd.DataFrame(columns=columns)
+    data = frame[
+        frame["pop_type"].astype("string").eq(pop_type)
+        & frame[geography].astype("string").isin([str(code) for code in country_codes])
+        & frame[opposite].astype("string").eq("_T")
+    ].copy()
+    if data.empty:
+        return pd.DataFrame(columns=columns)
+    label_col = f"{geography}_label"
+    data["population"] = pd.to_numeric(data["obs_value"], errors="coerce")
+    data = data.dropna(subset=["time_period", "population"])
+    keys = [geography, "time_period"]
+    if data.duplicated(keys, keep=False).any():
+        duplicated = data[data.duplicated(keys, keep=False)]
+        ambiguous = set(zip(duplicated[geography].astype(str), duplicated["time_period"].astype(str)))
+        data = data[
+            ~data.apply(lambda row: (str(row[geography]), str(row["time_period"])) in ambiguous, axis=1)
+        ]
+    data["country"] = data[label_col] if label_col in data.columns else data[geography]
+    return (
+        data.rename(columns={geography: "country_code"})
+        [["time_period", "country_code", "country", "population"]]
+        .drop_duplicates()
+        .sort_values(["time_period", "country"])
+        .reset_index(drop=True)
+    )
+
+
 def population_period_coverage(pop_type: str) -> pd.DataFrame:
     """
     Retrieve the full available reporting-period history for one population type.
