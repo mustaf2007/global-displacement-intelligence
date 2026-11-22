@@ -21,6 +21,7 @@ from src.unhcr import (
     explicit_total_trend,
     decade_comparison,
     country_historical_comparison,
+    country_profile_series,
     filter_reporting_periods,
 )
 
@@ -65,7 +66,7 @@ with st.sidebar:
     role = st.radio("Country view", ["Countries of asylum / hosting", "Countries of origin"])
     analysis_view = st.radio(
         "Analysis page",
-        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Country historical comparison", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data"],
+        ["Country explorer", "Global hosting comparison", "Global hosting map", "Historical change analysis", "Country historical comparison", "Country profile comparison", "Global displacement trends", "Displacement pressure signals", "Somalia displacement profile", "Somalia subnational data"],
         help="Compare country totals across all available hosting countries.",
     )
 
@@ -329,6 +330,119 @@ if analysis_view == "Country historical comparison":
     else:
         st.info("This is a flow comparison. Each point is a period-specific flow. Missing periods are not zero, and values should not be interpreted as a population stock.")
     st.caption("Only unique country-period totals with the opposite geography set to the source total code are included. Duplicate country-period keys are withheld rather than summed. Gaps indicate missing or ambiguous observations, not zero population.")
+    st.stop()
+
+if analysis_view == "Country profile comparison":
+    st.header("Country profile comparison")
+    st.caption(
+        "Build a multi-indicator historical profile for one country. Population categories remain separate; "
+        "the dashboard does not add refugees, IDPs or asylum-seekers together."
+    )
+    opposite = "area_ori_adm0" if geo == "ref_area_adm0" else "ref_area_adm0"
+    if geo not in df.columns or opposite not in df.columns:
+        st.warning("The retrieved data do not contain the dimensions required for a country profile.")
+        st.stop()
+    country_options = df[
+        df["pop_type"].astype("string").eq(selected_type)
+        & df[opposite].astype("string").eq("_T")
+        & df[geo].notna()
+        & ~df[geo].astype("string").isin(["_T", "_X"])
+    ][[geo] + ([f"{geo}_label"] if f"{geo}_label" in df.columns else [])].drop_duplicates()
+    country_options["country_code"] = country_options[geo].astype(str)
+    label_col = f"{geo}_label"
+    country_options["country_name"] = country_options[label_col] if label_col in country_options.columns else country_options["country_code"]
+    country_options = country_options.drop_duplicates("country_code").sort_values("country_name")
+    if country_options.empty:
+        st.warning("No country totals are available for the selected geography and population category.")
+        st.stop()
+    country_map = dict(zip(country_options["country_code"], country_options["country_name"]))
+    selected_country = st.selectbox(
+        "Select country",
+        country_options["country_code"].tolist(),
+        format_func=lambda code: country_map.get(code, code),
+    )
+    available_categories = [
+        "REF_UNHCR", "REF_UNRWA", "ASY", "OIP",
+        "IDP_UNHCR", "IDP_IDMC", "RET", "RDP", "NAT", "RASP", "STA",
+    ]
+    default_categories = [code for code in [selected_type, "ASY", "IDP_UNHCR"] if code in available_categories]
+    selected_categories = st.multiselect(
+        "Population indicators",
+        options=available_categories,
+        default=list(dict.fromkeys(default_categories)),
+        format_func=lambda code: type_labels.get(code, code),
+        help="Select indicators to profile. Each category is reported separately and is never combined into a single population total.",
+    )
+    if not selected_categories:
+        st.info("Select at least one population indicator.")
+        st.stop()
+    category_frames = {}
+    category_errors = {}
+    for category in selected_categories:
+        try:
+            category_frame = df.copy() if category == selected_type else load_population_data(category)
+            category_frames[category] = filter_reporting_periods(category_frame, range_start, range_end)
+        except Exception as exc:
+            category_errors[category] = f"{type(exc).__name__}: {exc}"
+    if category_errors:
+        for category, error in category_errors.items():
+            st.warning(f"{type_labels.get(category, category)} could not be loaded: {error}")
+    profile = country_profile_series(category_frames, selected_country, geo)
+    if profile.empty:
+        st.warning("No unambiguous country-level observations were found for the selected indicators and period range.")
+        st.stop()
+    st.caption(
+        f"Country: {country_map.get(selected_country, selected_country)} · "
+        f"Geography: {'Hosting / country of asylum' if geo == 'ref_area_adm0' else 'Country of origin'} · "
+        f"Period range: {range_start} to {range_end}"
+    )
+    latest_rows = (
+        profile.sort_values("time_period")
+        .groupby("pop_type", as_index=False)
+        .tail(1)
+        .sort_values("pop_type")
+    )
+    st.subheader("Latest observed value by indicator")
+    metric_cols = st.columns(min(3, len(latest_rows)))
+    for index, (_, row) in enumerate(latest_rows.iterrows()):
+        with metric_cols[index % len(metric_cols)]:
+            st.metric(
+                type_labels.get(row["pop_type"], row["pop_type"]),
+                f"{row['population']:,.0f}",
+                help=f"Latest observed reporting period: {row['time_period']} · {row['measure_type'].title()} measure",
+            )
+            st.caption(f"Reporting period: {row['time_period']}")
+    st.subheader("Historical profile")
+    st.caption("Each indicator has its own panel and vertical scale so that differences in magnitude do not hide smaller series. Gaps are not imputed.")
+    profile_fig = px.line(
+        profile,
+        x="time_period",
+        y="population",
+        color="pop_type",
+        facet_row="pop_type",
+        markers=True,
+        labels={"time_period": "Reporting period", "population": "People", "pop_type": "Indicator"},
+        category_orders={"pop_type": selected_categories},
+    )
+    profile_fig.for_each_annotation(lambda annotation: annotation.update(text=type_labels.get(annotation.text.split("=")[-1], annotation.text)))
+    profile_fig.update_yaxes(matches=None, tickformat=",")
+    profile_fig.update_layout(height=max(420, 230 * profile["pop_type"].nunique()), showlegend=False, xaxis_tickangle=-45)
+    st.plotly_chart(profile_fig, use_container_width=True)
+    st.subheader("Observed data and coverage")
+    coverage = (
+        profile.groupby(["pop_type", "measure_type"], as_index=False)
+        .agg(observed_periods=("time_period", "nunique"), first_period=("time_period", "min"), latest_period=("time_period", "max"))
+    )
+    coverage["population_category"] = coverage["pop_type"].map(type_labels)
+    st.dataframe(coverage[["population_category", "measure_type", "observed_periods", "first_period", "latest_period"]], hide_index=True, use_container_width=True)
+    st.dataframe(profile, hide_index=True, use_container_width=True)
+    st.download_button(
+        "Download country profile (CSV)",
+        data=profile.to_csv(index=False).encode("utf-8-sig"),
+        file_name=f"country_profile_{selected_country}.csv",
+        mime="text/csv",
+    )
+    st.info("Stock indicators describe populations at a point in time; flow indicators describe events or movements during a period. Do not add category values together or compare them as if they were the same measure. Missing periods are not zero. Duplicate country-period totals are withheld.")
     st.stop()
 
 if analysis_view == "Global displacement trends":
