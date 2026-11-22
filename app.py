@@ -90,25 +90,30 @@ if analysis_view == "Global hosting comparison":
             "The dashboard does not sum overlapping records."
         )
     else:
-        host_total_sum = float(ranking["population"].sum())
         top_country = ranking.iloc[0]
         left, middle, right = st.columns(3)
         left.metric("Countries with reported totals", f"{len(ranking):,}")
         middle.metric("Largest hosting country", str(top_country["country"]))
-        right.metric("Population in displayed country totals", f"{host_total_sum:,.0f}")
+        right.metric("Largest hosting-country population", f"{top_country['population']:,.0f}")
+
+        st.subheader("Top 20 refugee-hosting countries")
+        top20 = ranking.head(20).sort_values("population")
         comparison_fig = px.bar(
-            ranking.sort_values("population"),
+            top20,
             x="population",
             y="country",
             orientation="h",
             labels={"population": "People", "country": "Hosting country"},
-            title="Refugee-hosting countries",
+            title="Top 20 hosting countries",
         )
-        comparison_fig.update_layout(
-            height=max(500, 24 * len(ranking)),
-            yaxis_title=None,
-        )
+        comparison_fig.update_layout(height=650, yaxis_title=None)
         st.plotly_chart(comparison_fig, use_container_width=True)
+
+        st.subheader("Complete country ranking")
+        st.caption(
+            f"Showing all {len(ranking):,} countries with an unambiguous reported total. "
+            "The sum of country totals is not presented as an official global total."
+        )
         st.dataframe(ranking, hide_index=True, use_container_width=True)
         comparison_export = ranking.copy()
         comparison_export.insert(0, "reporting_period", selected_period)
