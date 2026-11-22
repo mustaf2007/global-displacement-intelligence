@@ -166,9 +166,10 @@
     "period_start": "2026-11-07",
     "period_end": "2026-11-11",
     "coverage_districts": 16,
-    "extraction_status": "metadata_verified_values_not_extracted",
-    "notes": "Report listing confirms 07–11 November 2026 and 16 districts assessed. The indexed report page does not expose the numerical tables in machine-readable text; figures remain unextracted pending direct report-file review.",
+    "extraction_status": "verified_observations_in_registry",
+    "notes": "Numerical observations transcribed from the three-page IOM Week 20 report copy supplied for project extraction. Verified headline: 10,013 weekly new arrivals; cumulative arrivals since 14 June 2026: 124,566; 811 settlements (86% urban, 14% rural), including 641 IDP sites; 16 districts. Reported causes: conflict 41%, floods 34%, drought 18%, evictions 7%, other hazards <1%. Ten origin-region and seven destination-region marginal counts each reconcile to 10,013; they are not a bilateral route matrix. Main IDP needs among settlements: food 59%, drinking water 11%, shelter 10%, cash 8%, livelihoods 7%; these leading needs are not an exhaustive distribution. Key informant estimates; partial district coverage. Other hazards <1% retained as source text and not converted to zero.",
     "catalogue_url": "https://dtm.iom.int/somalia",
-    "coverage_districts_basis": "round_level_or_report_metadata"
+    "coverage_districts_basis": "round_level_or_report_metadata",
+    "source_document": "IOM_DTM_Somalia_ETT_2026_week_20.pdf (three-page IOM report copy supplied for project extraction)"
   }
 ]
