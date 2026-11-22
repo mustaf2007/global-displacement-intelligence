@@ -48,7 +48,7 @@ class ETTPeriodComparisonTests(unittest.TestCase):
 
     def test_mixed_sources_are_not_combined(self):
         mixed = [row.copy() for row in self.later]
-        mixed[0]["source"] = "Different source"
+        next(row for row in mixed if row["geography_type"] == "origin_region")["source"] = "Different source"
         result, meta = self.compare(self.base + mixed)
         self.assertEqual(meta["status"], "mixed_sources")
         self.assertTrue(result.empty)
