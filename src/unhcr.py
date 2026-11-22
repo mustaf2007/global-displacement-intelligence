@@ -140,6 +140,51 @@ def country_ranking(frame: pd.DataFrame, pop_type: str, geography: str, period: 
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def country_origin_breakdown(pop_type: str, host_code: str, period: str) -> pd.DataFrame:
+    """
+    Retrieve origin-country records for one hosting country and reporting period.
+    The custom dimensions retain the required population type and filtered
+    hosting-country dimension, then add country of origin as the breakdown.
+    """
+    params = {
+        "c[pop_type]": pop_type,
+        "c[ref_area_adm0]": host_code,
+        "time_period": f"eq:{period}",
+        "dimensions": "pop_type,ref_area_adm0,area_ori_adm0",
+        "sort": "obs_value:desc",
+    }
+    data = _fetch_all(params)
+    required = {"pop_type", "ref_area_adm0", "area_ori_adm0", "time_period", "obs_value"}
+    missing = required.difference(data.columns)
+    if missing:
+        raise UNHCRDataError(
+            "UNHCR origin breakdown is missing fields: " + ", ".join(sorted(missing))
+        )
+    data["obs_value"] = pd.to_numeric(data["obs_value"], errors="coerce")
+    data = data[
+        data["pop_type"].astype("string").eq(pop_type)
+        & data["ref_area_adm0"].astype("string").eq(host_code)
+        & data["time_period"].astype("string").eq(period)
+    ].dropna(subset=["obs_value"])
+
+    # _T is the explicit total; _X is unspecified origin. Neither is a country.
+    origin = data[
+        ~data["area_ori_adm0"].astype("string").isin(["_T", "_X"])
+    ].copy()
+    label_col = "area_ori_adm0_label"
+    name_col = label_col if label_col in origin.columns else "area_ori_adm0"
+    origin = origin[["area_ori_adm0", name_col, "obs_value"]].drop_duplicates()
+    # Do not silently aggregate or choose between conflicting records.
+    origin = origin[~origin["area_ori_adm0"].duplicated(keep=False)]
+    return (
+        origin[[name_col, "obs_value"]]
+        .rename(columns={name_col: "country_of_origin", "obs_value": "population"})
+        .sort_values("population", ascending=False)
+        .reset_index(drop=True)
+    )
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def country_trend(pop_type: str, geo_code: str, geography: str) -> pd.DataFrame:
     if geography not in ("ref_area_adm0", "area_ori_adm0"):
         return pd.DataFrame(columns=["time_period", "population"])
